@@ -412,37 +412,97 @@ body {
   color: var(--text-inverse);
 }
 
-/* ===== LOADING STATE ===== */
+/* ===== LOADING STATE (SKELETON) ===== */
 .loading-overlay {
   display: none;
-  text-align: center;
-  padding: var(--sp-12) var(--sp-8);
+  padding: 0;
+  animation: fadeIn 0.4s ease;
 }
 
 .loading-overlay.active { display: block; }
 
-.spinner {
-  width: 44px;
-  height: 44px;
-  margin: 0 auto var(--sp-6);
+.loading-status-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-2);
+}
+
+.spinner-small {
+  width: 24px;
+  height: 24px;
   border: 3px solid var(--border);
   border-top-color: var(--forest);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-.loading-overlay h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
+.loading-status-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--forest);
-  margin-bottom: var(--sp-2);
+  letter-spacing: -0.02em;
 }
 
-.loading-overlay p {
+.loading-subtext {
   color: var(--text-muted);
-  font-size: 0.85rem;
-  max-width: 400px;
-  margin: 0 auto;
+  margin-bottom: var(--sp-8);
+  font-size: 0.95rem;
+}
+
+/* Skeleton Animations */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-panel::after, .skeleton-text, .skeleton-circle {
+  background: linear-gradient(90deg, #F0F0F0 25%, #FAFAFA 50%, #F0F0F0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: var(--r-sm);
+  margin-bottom: var(--sp-3);
+  width: 100%;
+}
+.skeleton-text.title { height: 18px; width: 40%; margin-bottom: var(--sp-4); }
+.skeleton-text.short { width: 30%; }
+.skeleton-text.long { width: 85%; }
+.skeleton-text.huge { height: 36px; width: 60%; margin-bottom: var(--sp-2); }
+.skeleton-text.center { margin-left: auto; margin-right: auto; }
+
+.skeleton-circle {
+  border-radius: 50%;
+  margin-bottom: var(--sp-4);
+}
+.skeleton-circle.icon { width: 38px; height: 38px; }
+.skeleton-circle.huge { width: 120px; height: 120px; margin: 0 auto 0 auto; }
+
+.skeleton-dashboard {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ===== DASHBOARD ===== */

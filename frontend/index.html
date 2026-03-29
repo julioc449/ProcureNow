@@ -114,11 +114,62 @@
             </div>
         </section>
 
-        <!-- ======== LOADING STATE ======== -->
+        <!-- ======== LOADING STATE (SKELETON) ======== -->
         <div class="loading-overlay" id="loadingOverlay">
-            <div class="spinner"></div>
-            <h3>Analyzing Documents...</h3>
-            <p>Extracting requirements and auditing compliance. This may take a moment for large documents.</p>
+            <div class="loading-status-header">
+                <div class="spinner-small"></div>
+                <h2 id="loadingStatusText">Initializing analysis...</h2>
+            </div>
+            <p class="loading-subtext">This may take a moment for large documents.</p>
+            
+            <div class="skeleton-dashboard">
+                <!-- Summary Row Skeleton -->
+                <div class="summary-row">
+                    <div class="progress-ring-card skeleton-panel">
+                        <div class="skeleton-text short center" style="margin-bottom: 24px;"></div>
+                        <div class="skeleton-circle huge"></div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card skeleton-panel">
+                            <div class="skeleton-circle icon"></div>
+                            <div class="skeleton-text huge"></div>
+                            <div class="skeleton-text short"></div>
+                        </div>
+                        <div class="stat-card skeleton-panel">
+                            <div class="skeleton-circle icon"></div>
+                            <div class="skeleton-text huge"></div>
+                            <div class="skeleton-text short"></div>
+                        </div>
+                        <div class="stat-card skeleton-panel">
+                            <div class="skeleton-circle icon"></div>
+                            <div class="skeleton-text huge"></div>
+                            <div class="skeleton-text short"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Section Skeleton -->
+                <div class="category-section" style="margin-top: 32px;">
+                    <div class="category-header" style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
+                        <div class="skeleton-circle icon"></div>
+                        <div class="skeleton-text title" style="margin-bottom: 0;"></div>
+                    </div>
+                    <div class="requirements-list" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="requirement-card skeleton-panel" style="padding: 20px;">
+                            <div class="skeleton-text"></div>
+                            <div class="skeleton-text long"></div>
+                        </div>
+                        <div class="requirement-card skeleton-panel" style="padding: 20px;">
+                            <div class="skeleton-text"></div>
+                            <div class="skeleton-text short"></div>
+                        </div>
+                        <div class="requirement-card skeleton-panel" style="padding: 20px;">
+                            <div class="skeleton-text"></div>
+                            <div class="skeleton-text long"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ======== DASHBOARD ======== -->

@@ -163,18 +163,44 @@ async function runDemoAudit() {
 }
 
 // ─── UI State Management ───
+let loadingInterval = null;
+const loadingMessages = [
+    "Uploading to secure vault...",
+    "Extracting RFP requirements...",
+    "Mapping proposal table of contents...",
+    "Cross-referencing compliance rules...",
+    "Evaluating risk factors...",
+    "Structuring final audit report..."
+];
+
 function showLoading() {
     uploadSection.style.display = 'none';
     loadingOverlay.classList.add('active');
     dashboard.classList.remove('active');
+    
+    // Manage dynamic loading text
+    const statusText = document.getElementById('loadingStatusText');
+    if (statusText) {
+        let msgIndex = 0;
+        statusText.textContent = "Initializing analysis...";
+        clearInterval(loadingInterval);
+        loadingInterval = setInterval(() => {
+            if (msgIndex < loadingMessages.length) {
+                statusText.textContent = loadingMessages[msgIndex];
+                msgIndex++;
+            }
+        }, 3500); // update every 3.5 seconds
+    }
 }
 
 function hideLoading() {
+    clearInterval(loadingInterval);
     loadingOverlay.classList.remove('active');
     uploadSection.style.display = 'block';
 }
 
 function showDashboard() {
+    clearInterval(loadingInterval);
     loadingOverlay.classList.remove('active');
     uploadSection.style.display = 'none';
     complianceLibrary.classList.remove('active');
