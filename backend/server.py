@@ -26,8 +26,14 @@ from .pdf_reader import ingest_pdf_multimodal, extract_text_from_bytes
 from .extractor import get_requirements, extract_toc_and_page_map
 from .auditor import audit_proposal
 from .hooks import export_to_csv
+from . import database
 
 app = FastAPI(title="ProcureNow — RFP Compliance Auditor", version="2.0.0")
+
+@app.on_event("startup")
+def startup_event():
+    database.init_db()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,9 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory store for last audit (prototype)
-_last_audit = None
-_csv_path = None
+# Helper to get temp CSV path
+def _get_csv_path(audit_id: str) -> str:
+    return os.path.join(tempfile.gettempdir(), f"{audit_id}_audit.csv")
 
 
 @app.post("/api/full-audit")
@@ -53,8 +59,6 @@ async def full_audit(
     Phase 3 → Section-routed compliance cross-verification
     Phase 4 → Structured AuditReport JSON response
     """
-    global _last_audit, _csv_path
-
     try:
         rfp_bytes = await rfp.read()
         proposal_bytes = await proposal.read()
@@ -88,9 +92,9 @@ async def full_audit(
         )
 
         # ── Phase 4: Output ──────────────────────────────────────────────────
-        _last_audit = audit_report
-        _csv_path = os.path.join(tempfile.gettempdir(), f"{proposal_id}_audit.csv")
-        export_to_csv(audit_report, _csv_path)
+        database.save_audit(audit_report)
+        export_to_csv(audit_report, _get_csv_path(proposal_id))
+        
         print(f"\n[Pipeline] ✅ Audit complete — {audit_report.overall_percentage}% overall compliance.")
         return JSONResponse(content=audit_report.summary_dict())
 
@@ -104,8 +108,6 @@ async def full_audit(
 @app.post("/api/demo-audit")
 async def demo_audit():
     """Run the pipeline with mock data — no PDFs or API key needed."""
-    global _last_audit, _csv_path
-
     from .extractor import _get_mock_requirements
     from .auditor import _get_mock_audit
 
@@ -113,22 +115,52 @@ async def demo_audit():
     proposal_id = f"DEMO_{uuid.uuid4().hex[:8].upper()}"
     audit_report = _get_mock_audit(requirements, proposal_id, "Demo RFP — City Hall Renovation")
 
-    _last_audit = audit_report
-    _csv_path = os.path.join(tempfile.gettempdir(), f"{proposal_id}_audit.csv")
-    export_to_csv(audit_report, _csv_path)
+    database.save_audit(audit_report)
+    export_to_csv(audit_report, _get_csv_path(proposal_id))
 
     return JSONResponse(content=audit_report.summary_dict())
 
 
-@app.get("/api/export-csv")
-async def download_csv():
-    """Download the last audit report as a CSV file."""
-    if not _csv_path or not os.path.exists(_csv_path):
-        raise HTTPException(status_code=404, detail="No audit report available. Run an audit first.")
+@app.get("/api/audits")
+async def list_audits(limit: int = 50, offset: int = 0):
+    """List stored audits."""
+    return JSONResponse(content=database.list_audits(limit, offset))
+
+
+@app.get("/api/audits/{audit_id}")
+async def get_audit(audit_id: str):
+    """Retrieve a specific audit report."""
+    audit = database.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    return JSONResponse(content=audit.summary_dict())
+
+
+@app.delete("/api/audits/{audit_id}")
+async def delete_audit(audit_id: str):
+    """Delete a specific audit report."""
+    deleted = database.delete_audit(audit_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    return JSONResponse(content={"success": True})
+
+
+@app.get("/api/export-csv/{audit_id}")
+async def download_csv(audit_id: str):
+    """Download a specific audit report as a CSV file."""
+    csv_path = _get_csv_path(audit_id)
+    
+    # If the file doesn't exist locally (server restart etc), generate it
+    if not os.path.exists(csv_path):
+        audit = database.get_audit(audit_id)
+        if not audit:
+            raise HTTPException(status_code=404, detail="Audit not found")
+        export_to_csv(audit, csv_path)
+        
     return FileResponse(
-        _csv_path,
+        csv_path,
         media_type="text/csv",
-        filename="compliance_audit_report.csv",
+        filename=f"compliance_audit_{audit_id}.csv",
     )
 
 

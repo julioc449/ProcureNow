@@ -16,11 +16,11 @@
         <p>RFP Compliance Platform</p>
     </div>
     <div class="sidebar-nav">
-        <a class="sidebar-link active" id="navDashboard">
+        <a class="sidebar-link active" data-view="dashboard" id="navDashboard">
             <span class="material-symbols-outlined">dashboard</span>
             Audit Dashboard
         </a>
-        <a class="sidebar-link">
+        <a class="sidebar-link" data-view="library" id="navLibrary">
             <span class="material-symbols-outlined">inventory_2</span>
             Compliance Library
         </a>
@@ -195,6 +195,36 @@
 
             <!-- Requirements by Category -->
             <div id="categoriesContainer"></div>
+        </section>
+
+        <!-- ======== COMPLIANCE LIBRARY ======== -->
+        <section class="library-section" id="complianceLibrary">
+            <div class="page-header">
+                <h1>Compliance Library</h1>
+                <p>History of all analyzed proposals and their compliance results.</p>
+            </div>
+            
+            <div class="library-container">
+                <table class="library-table">
+                    <thead>
+                        <tr>
+                            <th>RFP Name</th>
+                            <th>Date</th>
+                            <th>Compliance Score</th>
+                            <th>Status Breakdown</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="libraryTableBody">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="libraryEmptyState" style="display: none;">
+                    <span class="material-symbols-outlined">inbox</span>
+                    <h3>No Audits Found</h3>
+                    <p>Run your first compliance audit from the dashboard to see it here.</p>
+                </div>
+            </div>
         </section>
     </div>
 </main>

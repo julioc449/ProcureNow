@@ -33,3 +33,5 @@ Thumbs.db
 
 # Node (if frontend ever uses npm)
 node_modules/
+
+data/*.db

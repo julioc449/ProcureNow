@@ -35,6 +35,13 @@ const exportCsvBtn      = document.getElementById('exportCsvBtn');
 const newAuditBtn       = document.getElementById('newAuditBtn');
 const filterBar         = document.getElementById('filterBar');
 
+// Routing elements
+const navDashboard      = document.getElementById('navDashboard');
+const navLibrary        = document.getElementById('navLibrary');
+const complianceLibrary = document.getElementById('complianceLibrary');
+const libraryTableBody  = document.getElementById('libraryTableBody');
+const libraryEmptyState = document.getElementById('libraryEmptyState');
+
 
 // ─── Category Material Icons ───
 const CATEGORY_ICONS = {
@@ -154,11 +161,13 @@ function hideLoading() {
 function showDashboard() {
     loadingOverlay.classList.remove('active');
     uploadSection.style.display = 'none';
+    complianceLibrary.classList.remove('active');
     dashboard.classList.add('active');
 }
 
 function resetToUpload() {
     dashboard.classList.remove('active');
+    complianceLibrary.classList.remove('active');
     uploadSection.style.display = 'block';
     rfpFile = null;
     proposalFile = null;
@@ -171,6 +180,134 @@ function resetToUpload() {
     updateAnalyzeButton();
     auditData = null;
 }
+
+// ─── Routing ───
+navDashboard.addEventListener('click', () => {
+    navDashboard.classList.add('active');
+    navLibrary.classList.remove('active');
+    complianceLibrary.classList.remove('active');
+    if (auditData) {
+        dashboard.classList.add('active');
+    } else {
+        uploadSection.style.display = 'block';
+    }
+});
+
+navLibrary.addEventListener('click', () => {
+    navLibrary.classList.add('active');
+    navDashboard.classList.remove('active');
+    dashboard.classList.remove('active');
+    uploadSection.style.display = 'none';
+    complianceLibrary.classList.add('active');
+    loadLibrary();
+});
+
+// ─── Compliance Library Logic ───
+async function loadLibrary() {
+    libraryTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading audits...</td></tr>';
+    libraryEmptyState.style.display = 'none';
+    
+    try {
+        const res = await fetch('/api/audits');
+        if (!res.ok) throw new Error('Failed to load audits');
+        const audits = await res.json();
+        
+        if (audits.length === 0) {
+            libraryTableBody.innerHTML = '';
+            libraryEmptyState.style.display = 'block';
+            return;
+        }
+        
+        libraryTableBody.innerHTML = audits.map(audit => {
+            const date = new Date(audit.created_at).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="lib-title">${escapeHtml(audit.rfp_name)}</div>
+                        <div class="lib-id">${audit.id}</div>
+                    </td>
+                    <td class="lib-date">${date}</td>
+                    <td>
+                        <span class="lib-score" style="color: ${getScoreColor(audit.overall_percentage)}">
+                            ${audit.overall_percentage.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td>
+                        <div class="category-stats" style="margin:0;">
+                            <span class="mini-badge complete-badge">${audit.complete_count} ✓</span>
+                            ${audit.partial_count > 0 ? `<span class="mini-badge partial-badge">${audit.partial_count} ~</span>` : ''}
+                            ${audit.incomplete_count > 0 ? `<span class="mini-badge incomplete-badge">${audit.incomplete_count} ✗</span>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="lib-actions">
+                            <button class="btn-icon" title="View Report" onclick="viewAudit('${audit.id}')">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
+                            <a href="/api/export-csv/${audit.id}" class="btn-icon" title="Export CSV" download>
+                                <span class="material-symbols-outlined">download</span>
+                            </a>
+                            <button class="btn-icon danger" title="Delete Audit" onclick="deleteAudit('${audit.id}')">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (err) {
+        libraryTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--incomplete); padding: 2rem;">Error: ${err.message}</td></tr>`;
+    }
+}
+
+function getScoreColor(pct) {
+    if (pct >= 85) return 'var(--complete)';
+    if (pct >= 60) return 'var(--partial)';
+    return 'var(--incomplete)';
+}
+
+window.viewAudit = async function(id) {
+    showLoading();
+    try {
+        const res = await fetch(`/api/audits/${id}`);
+        if (!res.ok) throw new Error('Audit not found');
+        auditData = await res.json();
+        
+        // Switch nav state manually
+        navDashboard.classList.add('active');
+        navLibrary.classList.remove('active');
+        complianceLibrary.classList.remove('active');
+        
+        renderDashboard(auditData);
+    } catch (err) {
+        hideLoading();
+        alert(`Failed to load audit: ${err.message}`);
+    }
+};
+
+window.deleteAudit = async function(id) {
+    if (!confirm('Are you sure you want to delete this audit report? This cannot be undone.')) return;
+    
+    try {
+        const res = await fetch(`/api/audits/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete audit');
+        
+        // If viewing the deleted audit, reset to upload
+        if (auditData && auditData.proposal_id === id) {
+            resetToUpload();
+            navLibrary.click(); // force library view
+        } else {
+            loadLibrary();      // just refresh table
+        }
+    } catch (err) {
+        alert(`Failed to delete: ${err.message}`);
+    }
+};
 
 // ─── Dashboard Rendering ───
 function renderDashboard(data) {
@@ -418,7 +555,9 @@ analyzeBtn.addEventListener('click', runFullAudit);
 demoBtn.addEventListener('click', runDemoAudit);
 newAuditBtn.addEventListener('click', resetToUpload);
 exportCsvBtn.addEventListener('click', () => {
-    window.location.href = '/api/export-csv';
+    if (auditData && auditData.proposal_id) {
+        window.location.href = `/api/export-csv/${auditData.proposal_id}`;
+    }
 });
 
 // ─── Utility ───

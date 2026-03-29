@@ -16,6 +16,9 @@ load_dotenv(_env_path)
 # ── API Key ────────────────────────────────────────────────────────────────
 GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
 
+# ── DB Layer ───────────────────────────────────────────────────────────────
+DB_PATH = _env_path.parent / "data" / "procurenow.db"
+
 # ── Model (paid tier — gemini-2.0-flash everywhere) ───────────────────────
 MODEL = "gemini-2.0-flash"
 

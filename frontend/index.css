@@ -1123,3 +1123,113 @@ body {
 .percentage-bar-fill.complete   { background: var(--complete); }
 .percentage-bar-fill.partial    { background: var(--partial); }
 .percentage-bar-fill.incomplete { background: var(--incomplete); }
+
+/* ===== COMPLIANCE LIBRARY ===== */
+.library-section { display: none; }
+.library-section.active { display: block; animation: fadeInUp 0.4s ease-out; }
+
+.library-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.library-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.library-table th {
+  padding: var(--sp-4) var(--sp-5);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.library-table td {
+  padding: var(--sp-4) var(--sp-5);
+  font-size: 0.85rem;
+  color: var(--text-body);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.library-table tbody tr {
+  transition: background var(--ease);
+}
+
+.library-table tbody tr:hover {
+  background: #FAFAF9; /* Slight hover effect */
+}
+
+.library-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lib-title {
+  font-weight: 700;
+  color: var(--forest);
+  font-size: 0.9rem;
+}
+
+.lib-id {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lib-date {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.lib-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.lib-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--ease);
+  text-decoration: none;
+}
+
+.btn-icon .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.btn-icon:hover {
+  background: var(--bg-muted);
+  color: var(--forest);
+  border-color: var(--border);
+}
+
+.btn-icon.danger:hover {
+  background: var(--incomplete-bg);
+  color: var(--incomplete);
+  border-color: rgba(220, 38, 38, 0.2);
+}
