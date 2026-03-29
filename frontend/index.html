@@ -1,325 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="RFP Compliance Auditor — Automated gap analysis dashboard for construction proposals against Request for Proposal requirements.">
+    <meta name="description"
+        content="RFP Compliance Auditor — Automated gap analysis dashboard for construction proposals against Request for Proposal requirements.">
     <title>ProcureNow — RFP Compliance Auditor</title>
     <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
 
-<!-- ======== SIDEBAR ======== -->
-<nav class="sidebar">
-    <div class="sidebar-brand">
-        <h2>ProcureNow</h2>
-        <p>RFP Compliance Platform</p>
-    </div>
-    <div class="sidebar-nav">
-        <a class="sidebar-link active" data-view="dashboard" id="navDashboard">
-            <span class="material-symbols-outlined">dashboard</span>
-            Audit Dashboard
-        </a>
-        <a class="sidebar-link" data-view="library" id="navLibrary">
-            <span class="material-symbols-outlined">inventory_2</span>
-            Compliance Library
-        </a>
-        <a class="sidebar-link" data-view="pdf-viewer" id="navPdfViewer">
-            <span class="material-symbols-outlined">splitscreen</span>
-            Evidence Viewer
-        </a>
-        <a class="sidebar-link">
-            <span class="material-symbols-outlined">gavel</span>
-            Risk Reports
-        </a>
-        <a class="sidebar-link">
-            <span class="material-symbols-outlined">settings</span>
-            Settings
-        </a>
-    </div>
-    <div class="sidebar-footer">
-        <a class="sidebar-link">
-            <span class="material-symbols-outlined">help</span>
-            Support
-        </a>
-    </div>
-</nav>
-
-<!-- ======== MAIN CONTENT ======== -->
-<main class="main-content">
-    <!-- Top Bar -->
-    <header class="top-bar">
-        <div class="top-bar-left">
-            <span class="material-symbols-outlined" style="font-size: 20px;">shield</span>
-            <h1>RFP Compliance Auditor</h1>
+    <!-- ======== SIDEBAR ======== -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <h2>ProcureNow</h2>
+            <p>RFP Compliance Platform</p>
         </div>
-        <div class="top-bar-right">
-            <span class="top-bar-breadcrumb">Powered by Gemini AI</span>
+        <div class="sidebar-nav">
+            <a class="sidebar-link active" data-view="dashboard" id="navDashboard">
+                <span class="material-symbols-outlined">dashboard</span>
+                Audit Dashboard
+            </a>
+            <a class="sidebar-link" data-view="library" id="navLibrary">
+                <span class="material-symbols-outlined">inventory_2</span>
+                Compliance Library
+            </a>
+            <a class="sidebar-link" data-view="pdf-viewer" id="navPdfViewer">
+                <span class="material-symbols-outlined">splitscreen</span>
+                Evidence Viewer
+            </a>
         </div>
-    </header>
+    </nav>
 
-    <div class="content-area">
-        <!-- ======== UPLOAD SECTION ======== -->
-        <section id="uploadSection">
-            <div class="page-header">
-                <h1>New Compliance Audit</h1>
-                <p>Upload your RFP and proposal documents to instantly analyze compliance gaps, risk factors, and requirements fulfillment.</p>
+    <!-- ======== MAIN CONTENT ======== -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <span class="material-symbols-outlined" style="font-size: 20px;">shield</span>
+                <h1>RFP Compliance Auditor</h1>
             </div>
+        </header>
 
-            <div class="upload-panel">
-                <div class="upload-zone" id="rfpZone">
-                    <div class="icon">
-                        <span class="material-symbols-outlined">description</span>
+        <div class="content-area">
+            <!-- ======== UPLOAD SECTION ======== -->
+            <section id="uploadSection">
+                <div class="page-header">
+                    <h1>New Compliance Audit</h1>
+                    <p>Upload your RFP and proposal documents to instantly analyze compliance gaps, risk factors, and
+                        requirements fulfillment.</p>
+                </div>
+
+                <div class="upload-panel">
+                    <div class="upload-zone" id="rfpZone">
+                        <div class="icon">
+                            <span class="material-symbols-outlined">description</span>
+                        </div>
+                        <h3>RFP Document</h3>
+                        <p>Drop your Request for Proposal PDF here<br>or click to browse</p>
+                        <div class="file-name" id="rfpFileName"></div>
+                        <input type="file" id="rfpInput" accept=".pdf">
                     </div>
-                    <h3>RFP Document</h3>
-                    <p>Drop your Request for Proposal PDF here<br>or click to browse</p>
-                    <div class="file-name" id="rfpFileName"></div>
-                    <input type="file" id="rfpInput" accept=".pdf">
-                </div>
-                <div class="upload-zone" id="proposalZone">
-                    <div class="icon">
-                        <span class="material-symbols-outlined">draft</span>
+                    <div class="upload-zone" id="proposalZone">
+                        <div class="icon">
+                            <span class="material-symbols-outlined">draft</span>
+                        </div>
+                        <h3>Submittal / Proposal</h3>
+                        <p>Drop your company's proposal PDF here<br>or click to browse</p>
+                        <div class="file-name" id="proposalFileName"></div>
+                        <input type="file" id="proposalInput" accept=".pdf">
                     </div>
-                    <h3>Submittal / Proposal</h3>
-                    <p>Drop your company's proposal PDF here<br>or click to browse</p>
-                    <div class="file-name" id="proposalFileName"></div>
-                    <input type="file" id="proposalInput" accept=".pdf">
+                </div>
+
+                <div class="upload-metrics">
+                    <div class="metric-chip">
+                        <span class="label">Avg Analysis</span>
+                        <span class="value">~14s</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="label">Confidence</span>
+                        <span class="value">99.8%</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="label">Max Pages</span>
+                        <span class="value">500+</span>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button class="btn btn-primary" id="analyzeBtn" disabled>
+                        <span class="material-symbols-outlined">bolt</span>
+                        Run Compliance Audit
+                    </button>
+                    <button class="btn btn-demo" id="demoBtn">
+                        <span class="material-symbols-outlined">science</span>
+                        Run Demo Audit
+                    </button>
+                </div>
+            </section>
+
+            <!-- ======== LOADING STATE (SKELETON) ======== -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-status-header">
+                    <div class="spinner-small"></div>
+                    <h2 id="loadingStatusText">Initializing analysis...</h2>
+                </div>
+                <p class="loading-subtext">This may take a moment for large documents.</p>
+
+                <div class="skeleton-dashboard">
+                    <!-- Summary Row Skeleton -->
+                    <div class="summary-row">
+                        <div class="progress-ring-card skeleton-panel">
+                            <div class="skeleton-text short center" style="margin-bottom: 24px;"></div>
+                            <div class="skeleton-circle huge"></div>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card skeleton-panel">
+                                <div class="skeleton-circle icon"></div>
+                                <div class="skeleton-text huge"></div>
+                                <div class="skeleton-text short"></div>
+                            </div>
+                            <div class="stat-card skeleton-panel">
+                                <div class="skeleton-circle icon"></div>
+                                <div class="skeleton-text huge"></div>
+                                <div class="skeleton-text short"></div>
+                            </div>
+                            <div class="stat-card skeleton-panel">
+                                <div class="skeleton-circle icon"></div>
+                                <div class="skeleton-text huge"></div>
+                                <div class="skeleton-text short"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Section Skeleton -->
+                    <div class="category-section" style="margin-top: 32px;">
+                        <div class="category-header"
+                            style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
+                            <div class="skeleton-circle icon"></div>
+                            <div class="skeleton-text title" style="margin-bottom: 0;"></div>
+                        </div>
+                        <div class="requirements-list" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="requirement-card skeleton-panel" style="padding: 20px;">
+                                <div class="skeleton-text"></div>
+                                <div class="skeleton-text long"></div>
+                            </div>
+                            <div class="requirement-card skeleton-panel" style="padding: 20px;">
+                                <div class="skeleton-text"></div>
+                                <div class="skeleton-text short"></div>
+                            </div>
+                            <div class="requirement-card skeleton-panel" style="padding: 20px;">
+                                <div class="skeleton-text"></div>
+                                <div class="skeleton-text long"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="upload-metrics">
-                <div class="metric-chip">
-                    <span class="label">Avg Analysis</span>
-                    <span class="value">~14s</span>
+            <!-- ======== DASHBOARD ======== -->
+            <section class="dashboard" id="dashboard">
+                <!-- RFP Info Bar -->
+                <div class="rfp-info-bar">
+                    <div class="rfp-icon">
+                        <span class="material-symbols-outlined">fact_check</span>
+                    </div>
+                    <div class="rfp-details">
+                        <div class="rfp-title" id="rfpTitle"></div>
+                        <div class="rfp-id" id="proposalId"></div>
+                    </div>
+                    <div class="rfp-actions">
+                        <button class="btn btn-secondary" id="exportCsvBtn">
+                            <span class="material-symbols-outlined">download</span>
+                            Export CSV
+                        </button>
+                        <button class="btn btn-secondary" id="newAuditBtn">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            New Audit
+                        </button>
+                    </div>
                 </div>
-                <div class="metric-chip">
-                    <span class="label">Confidence</span>
-                    <span class="value">99.8%</span>
-                </div>
-                <div class="metric-chip">
-                    <span class="label">Max Pages</span>
-                    <span class="value">500+</span>
-                </div>
-            </div>
 
-            <div class="action-row">
-                <button class="btn btn-primary" id="analyzeBtn" disabled>
-                    <span class="material-symbols-outlined">bolt</span>
-                    Run Compliance Audit
-                </button>
-                <button class="btn btn-demo" id="demoBtn">
-                    <span class="material-symbols-outlined">science</span>
-                    Run Demo Audit
-                </button>
-            </div>
-        </section>
-
-        <!-- ======== LOADING STATE (SKELETON) ======== -->
-        <div class="loading-overlay" id="loadingOverlay">
-            <div class="loading-status-header">
-                <div class="spinner-small"></div>
-                <h2 id="loadingStatusText">Initializing analysis...</h2>
-            </div>
-            <p class="loading-subtext">This may take a moment for large documents.</p>
-            
-            <div class="skeleton-dashboard">
-                <!-- Summary Row Skeleton -->
+                <!-- Summary Row -->
                 <div class="summary-row">
-                    <div class="progress-ring-card skeleton-panel">
-                        <div class="skeleton-text short center" style="margin-bottom: 24px;"></div>
-                        <div class="skeleton-circle huge"></div>
+                    <!-- Progress Ring -->
+                    <div class="progress-ring-card">
+                        <h3>Overall Compliance</h3>
+                        <div class="progress-ring-wrapper">
+                            <svg viewBox="0 0 150 150">
+                                <circle class="progress-ring-bg" cx="75" cy="75" r="65" />
+                                <circle class="progress-ring-seg" id="ringIncomplete" cx="75" cy="75" r="65" />
+                                <circle class="progress-ring-seg" id="ringPartial" cx="75" cy="75" r="65" />
+                                <circle class="progress-ring-seg" id="ringComplete" cx="75" cy="75" r="65" />
+                            </svg>
+                            <div class="progress-ring-text" id="progressText">
+                                0<span>%</span>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Stats Grid -->
                     <div class="stats-grid">
-                        <div class="stat-card skeleton-panel">
-                            <div class="skeleton-circle icon"></div>
-                            <div class="skeleton-text huge"></div>
-                            <div class="skeleton-text short"></div>
+                        <div class="stat-card complete">
+                            <div class="stat-icon">
+                                <span class="material-symbols-outlined">check_circle</span>
+                            </div>
+                            <div class="stat-value" id="completeCount">0</div>
+                            <div class="stat-label">Complete</div>
                         </div>
-                        <div class="stat-card skeleton-panel">
-                            <div class="skeleton-circle icon"></div>
-                            <div class="skeleton-text huge"></div>
-                            <div class="skeleton-text short"></div>
+                        <div class="stat-card partial">
+                            <div class="stat-icon">
+                                <span class="material-symbols-outlined">warning</span>
+                            </div>
+                            <div class="stat-value" id="partialCount">0</div>
+                            <div class="stat-label">Partial</div>
                         </div>
-                        <div class="stat-card skeleton-panel">
-                            <div class="skeleton-circle icon"></div>
-                            <div class="skeleton-text huge"></div>
-                            <div class="skeleton-text short"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Category Section Skeleton -->
-                <div class="category-section" style="margin-top: 32px;">
-                    <div class="category-header" style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
-                        <div class="skeleton-circle icon"></div>
-                        <div class="skeleton-text title" style="margin-bottom: 0;"></div>
-                    </div>
-                    <div class="requirements-list" style="display: flex; flex-direction: column; gap: 12px;">
-                        <div class="requirement-card skeleton-panel" style="padding: 20px;">
-                            <div class="skeleton-text"></div>
-                            <div class="skeleton-text long"></div>
-                        </div>
-                        <div class="requirement-card skeleton-panel" style="padding: 20px;">
-                            <div class="skeleton-text"></div>
-                            <div class="skeleton-text short"></div>
-                        </div>
-                        <div class="requirement-card skeleton-panel" style="padding: 20px;">
-                            <div class="skeleton-text"></div>
-                            <div class="skeleton-text long"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ======== DASHBOARD ======== -->
-        <section class="dashboard" id="dashboard">
-            <!-- RFP Info Bar -->
-            <div class="rfp-info-bar">
-                <div class="rfp-icon">
-                    <span class="material-symbols-outlined">fact_check</span>
-                </div>
-                <div class="rfp-details">
-                    <div class="rfp-title" id="rfpTitle"></div>
-                    <div class="rfp-id" id="proposalId"></div>
-                </div>
-                <div class="rfp-actions">
-                    <button class="btn btn-secondary" id="exportCsvBtn">
-                        <span class="material-symbols-outlined">download</span>
-                        Export CSV
-                    </button>
-                    <button class="btn btn-secondary" id="newAuditBtn">
-                        <span class="material-symbols-outlined">add_circle</span>
-                        New Audit
-                    </button>
-                </div>
-            </div>
-
-            <!-- Summary Row -->
-            <div class="summary-row">
-                <!-- Progress Ring -->
-                <div class="progress-ring-card">
-                    <h3>Overall Compliance</h3>
-                    <div class="progress-ring-wrapper">
-                        <svg viewBox="0 0 150 150">
-                            <circle class="progress-ring-bg" cx="75" cy="75" r="65"/>
-                            <circle class="progress-ring-seg" id="ringIncomplete" cx="75" cy="75" r="65"/>
-                            <circle class="progress-ring-seg" id="ringPartial"    cx="75" cy="75" r="65"/>
-                            <circle class="progress-ring-seg" id="ringComplete"   cx="75" cy="75" r="65"/>
-                        </svg>
-                        <div class="progress-ring-text" id="progressText">
-                            0<span>%</span>
+                        <div class="stat-card incomplete">
+                            <div class="stat-icon">
+                                <span class="material-symbols-outlined">cancel</span>
+                            </div>
+                            <div class="stat-value" id="incompleteCount">0</div>
+                            <div class="stat-label">Incomplete</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card complete">
-                        <div class="stat-icon">
-                            <span class="material-symbols-outlined">check_circle</span>
-                        </div>
-                        <div class="stat-value" id="completeCount">0</div>
-                        <div class="stat-label">Complete</div>
-                    </div>
-                    <div class="stat-card partial">
-                        <div class="stat-icon">
+                <!-- Priority Matrix -->
+                <div class="priority-matrix-section" id="priorityMatrixSection"
+                    style="display: none; margin-bottom: var(--sp-6);">
+                    <div class="category-header" style="margin-bottom: var(--sp-4);">
+                        <div class="category-icon" style="background: var(--incomplete-bg); color: var(--incomplete);">
                             <span class="material-symbols-outlined">warning</span>
                         </div>
-                        <div class="stat-value" id="partialCount">0</div>
-                        <div class="stat-label">Partial</div>
+                        <h2>Critical Focus Areas</h2>
                     </div>
-                    <div class="stat-card incomplete">
-                        <div class="stat-icon">
-                            <span class="material-symbols-outlined">cancel</span>
+                    <div class="requirements-list" id="priorityMatrixContainer"></div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filter-bar" id="filterBar">
+                    <label>Filter:</label>
+                    <button class="filter-chip active" data-filter="all">All</button>
+                    <button class="filter-chip" data-filter="Complete">Complete</button>
+                    <button class="filter-chip" data-filter="Partial">Partial</button>
+                    <button class="filter-chip" data-filter="Incomplete">Incomplete</button>
+                </div>
+
+                <!-- Requirements by Category -->
+                <div id="categoriesContainer"></div>
+            </section>
+
+            <!-- ======== EVIDENCE VIEWER ======== -->
+            <section class="pdf-viewer-section" id="pdfViewerPage">
+                <div class="page-header" style="margin-bottom: var(--sp-4);">
+                    <h1>Evidence Viewer</h1>
+                    <p>Verify AI-extracted requirements against the source proposal document.</p>
+                </div>
+
+                <div class="dashboard-split" style="margin-top: 0; padding-top: 0;">
+                    <!-- Left Side: Audit Results -->
+                    <div class="dashboard-left" id="pdfViewerCardsContainer">
+                        <!-- Cards will be populated here -->
+                    </div>
+
+                    <!-- Right Side: PDF Viewer -->
+                    <div class="dashboard-right" id="pdfViewerSection">
+                        <div class="pdf-viewer-header">
+                            <h3><span class="material-symbols-outlined">menu_book</span> Proposal Source Document</h3>
                         </div>
-                        <div class="stat-value" id="incompleteCount">0</div>
-                        <div class="stat-label">Incomplete</div>
+                        <div class="pdf-viewer-content" id="pdfViewerContent">
+                            <iframe id="proposalPdfFrame" src="about:blank"></iframe>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Priority Matrix -->
-            <div class="priority-matrix-section" id="priorityMatrixSection" style="display: none; margin-bottom: var(--sp-6);">
-                <div class="category-header" style="margin-bottom: var(--sp-4);">
-                    <div class="category-icon" style="background: var(--incomplete-bg); color: var(--incomplete);">
-                        <span class="material-symbols-outlined">warning</span>
-                    </div>
-                    <h2>Critical Focus Areas</h2>
-                </div>
-                <div class="requirements-list" id="priorityMatrixContainer"></div>
-            </div>
-
-            <!-- Filters -->
-            <div class="filter-bar" id="filterBar">
-                <label>Filter:</label>
-                <button class="filter-chip active" data-filter="all">All</button>
-                <button class="filter-chip" data-filter="Complete">Complete</button>
-                <button class="filter-chip" data-filter="Partial">Partial</button>
-                <button class="filter-chip" data-filter="Incomplete">Incomplete</button>
-            </div>
-
-            <!-- Requirements by Category -->
-            <div id="categoriesContainer"></div>
-        </section>
-
-        <!-- ======== EVIDENCE VIEWER ======== -->
-        <section class="pdf-viewer-section" id="pdfViewerPage">
-            <div class="page-header" style="margin-bottom: var(--sp-4);">
-                <h1>Evidence Viewer</h1>
-                <p>Verify AI-extracted requirements against the source proposal document.</p>
-            </div>
-            
-            <div class="dashboard-split" style="margin-top: 0; padding-top: 0;">
-                <!-- Left Side: Audit Results -->
-                <div class="dashboard-left" id="pdfViewerCardsContainer">
-                    <!-- Cards will be populated here -->
+            <!-- ======== COMPLIANCE LIBRARY ======== -->
+            <section class="library-section" id="complianceLibrary">
+                <div class="page-header">
+                    <h1>Compliance Library</h1>
+                    <p>History of all analyzed proposals and their compliance results.</p>
                 </div>
 
-                <!-- Right Side: PDF Viewer -->
-                <div class="dashboard-right" id="pdfViewerSection">
-                    <div class="pdf-viewer-header">
-                        <h3><span class="material-symbols-outlined">menu_book</span> Proposal Source Document</h3>
-                    </div>
-                    <div class="pdf-viewer-content" id="pdfViewerContent">
-                        <iframe id="proposalPdfFrame" src="about:blank"></iframe>
+                <div class="library-container">
+                    <table class="library-table">
+                        <thead>
+                            <tr>
+                                <th>RFP Name</th>
+                                <th>Date</th>
+                                <th>Compliance Score</th>
+                                <th>Status Breakdown</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="libraryTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="libraryEmptyState" style="display: none;">
+                        <span class="material-symbols-outlined">inbox</span>
+                        <h3>No Audits Found</h3>
+                        <p>Run your first compliance audit from the dashboard to see it here.</p>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
+    </main>
 
-        <!-- ======== COMPLIANCE LIBRARY ======== -->
-        <section class="library-section" id="complianceLibrary">
-            <div class="page-header">
-                <h1>Compliance Library</h1>
-                <p>History of all analyzed proposals and their compliance results.</p>
-            </div>
-            
-            <div class="library-container">
-                <table class="library-table">
-                    <thead>
-                        <tr>
-                            <th>RFP Name</th>
-                            <th>Date</th>
-                            <th>Compliance Score</th>
-                            <th>Status Breakdown</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="libraryTableBody">
-                        <!-- Populated via JS -->
-                    </tbody>
-                </table>
-                <div class="empty-state" id="libraryEmptyState" style="display: none;">
-                    <span class="material-symbols-outlined">inbox</span>
-                    <h3>No Audits Found</h3>
-                    <p>Run your first compliance audit from the dashboard to see it here.</p>
-                </div>
-            </div>
-        </section>
-    </div>
-</main>
-
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
+
 </html>
