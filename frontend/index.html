@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="RFP Compliance Auditor — Automated gap analysis dashboard for construction proposals against Request for Proposal requirements.">
-    <title>RFP Compliance Auditor | Obsidian Audit</title>
+    <title>ProcureNow — RFP Compliance Auditor</title>
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -12,8 +12,8 @@
 <!-- ======== SIDEBAR ======== -->
 <nav class="sidebar">
     <div class="sidebar-brand">
-        <h2>Obsidian Audit</h2>
-        <p>Enterprise Compliance</p>
+        <h2>ProcureNow</h2>
+        <p>RFP Compliance Platform</p>
     </div>
     <div class="sidebar-nav">
         <a class="sidebar-link active" id="navDashboard">
@@ -46,7 +46,7 @@
     <!-- Top Bar -->
     <header class="top-bar">
         <div class="top-bar-left">
-            <span class="material-symbols-outlined" style="color: var(--primary); font-size: 20px;">shield</span>
+            <span class="material-symbols-outlined" style="font-size: 20px;">shield</span>
             <h1>RFP Compliance Auditor</h1>
         </div>
         <div class="top-bar-right">
@@ -147,15 +147,10 @@
                     <h3>Overall Compliance</h3>
                     <div class="progress-ring-wrapper">
                         <svg viewBox="0 0 150 150">
-                            <defs>
-                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#8083ff"/>
-                                    <stop offset="50%" stop-color="#4edea3"/>
-                                    <stop offset="100%" stop-color="#c0c1ff"/>
-                                </linearGradient>
-                            </defs>
                             <circle class="progress-ring-bg" cx="75" cy="75" r="65"/>
-                            <circle class="progress-ring-fill" id="progressRing" cx="75" cy="75" r="65"/>
+                            <circle class="progress-ring-seg" id="ringIncomplete" cx="75" cy="75" r="65"/>
+                            <circle class="progress-ring-seg" id="ringPartial"    cx="75" cy="75" r="65"/>
+                            <circle class="progress-ring-seg" id="ringComplete"   cx="75" cy="75" r="65"/>
                         </svg>
                         <div class="progress-ring-text" id="progressText">
                             0<span>%</span>

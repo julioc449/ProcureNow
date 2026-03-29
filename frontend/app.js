@@ -21,17 +21,20 @@ const demoBtn = document.getElementById('demoBtn');
 const uploadSection = document.getElementById('uploadSection');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const dashboard = document.getElementById('dashboard');
-const progressRing = document.getElementById('progressRing');
-const progressText = document.getElementById('progressText');
-const completeCount = document.getElementById('completeCount');
-const partialCount = document.getElementById('partialCount');
-const incompleteCount = document.getElementById('incompleteCount');
+const progressText      = document.getElementById('progressText');
+const ringComplete      = document.getElementById('ringComplete');
+const ringPartial       = document.getElementById('ringPartial');
+const ringIncomplete    = document.getElementById('ringIncomplete');
+const completeCount     = document.getElementById('completeCount');
+const partialCount      = document.getElementById('partialCount');
+const incompleteCount   = document.getElementById('incompleteCount');
 const categoriesContainer = document.getElementById('categoriesContainer');
-const rfpTitle = document.getElementById('rfpTitle');
-const proposalId = document.getElementById('proposalId');
-const exportCsvBtn = document.getElementById('exportCsvBtn');
-const newAuditBtn = document.getElementById('newAuditBtn');
-const filterBar = document.getElementById('filterBar');
+const rfpTitle          = document.getElementById('rfpTitle');
+const proposalId        = document.getElementById('proposalId');
+const exportCsvBtn      = document.getElementById('exportCsvBtn');
+const newAuditBtn       = document.getElementById('newAuditBtn');
+const filterBar         = document.getElementById('filterBar');
+
 
 // ─── Category Material Icons ───
 const CATEGORY_ICONS = {
@@ -183,26 +186,40 @@ function renderDashboard(data) {
     animateNumber(incompleteCount, data.incomplete);
 
     // Progress ring
-    const pct = data.overall_percentage;
-    animateProgressRing(pct);
+    animateProgressRing(data);
 
     // Render categories
     renderCategories(data.audit_results);
 }
 
-function animateProgressRing(percentage) {
-    const circumference = 2 * Math.PI * 65; // r=65
-    const offset = circumference - (percentage / 100) * circumference;
+function animateProgressRing(data) {
+    const C = 2 * Math.PI * 65; // circumference for r=65
+    const total = data.complete + data.partial + data.incomplete;
+    if (total === 0) return;
 
+    const completeLen   = (data.complete   / total) * C;
+    const partialLen    = (data.partial    / total) * C;
+    const incompleteLen = (data.incomplete / total) * C;
+
+    // Rotation offsets so each arc starts where the previous one ends
+    const partialStartDeg    = (data.complete / total) * 360;
+    const incompleteStartDeg = ((data.complete + data.partial) / total) * 360;
+
+    ringComplete.setAttribute('transform',   `rotate(0, 75, 75)`);
+    ringPartial.setAttribute('transform',    `rotate(${partialStartDeg}, 75, 75)`);
+    ringIncomplete.setAttribute('transform', `rotate(${incompleteStartDeg}, 75, 75)`);
+
+    // Trigger CSS transition by setting dasharray in next frame
     requestAnimationFrame(() => {
-        progressRing.style.strokeDasharray = circumference;
         requestAnimationFrame(() => {
-            progressRing.style.strokeDashoffset = offset;
+            ringComplete.style.strokeDasharray   = `${completeLen}, ${C}`;
+            ringPartial.style.strokeDasharray    = `${partialLen}, ${C}`;
+            ringIncomplete.style.strokeDasharray = `${incompleteLen}, ${C}`;
         });
     });
 
-    // Animate number
-    animateValue(progressText, 0, percentage, 1500);
+    // Animate percentage number
+    animateValue(progressText, 0, data.overall_percentage, 1500);
 }
 
 function animateValue(el, start, end, duration) {
@@ -369,8 +386,13 @@ filterBar.addEventListener('click', e => {
     if (e.target.classList.contains('filter-chip')) {
         const filter = e.target.dataset.filter;
         activeFilter = filter;
-        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
+        document.querySelectorAll('.filter-chip').forEach(c =>
+            c.classList.remove('active', 'active-complete', 'active-partial', 'active-incomplete')
+        );
+        if      (filter === 'Complete')   e.target.classList.add('active-complete');
+        else if (filter === 'Partial')    e.target.classList.add('active-partial');
+        else if (filter === 'Incomplete') e.target.classList.add('active-incomplete');
+        else                              e.target.classList.add('active');
         applyFilter(filter);
     }
 });
