@@ -1233,3 +1233,27 @@ body {
   color: var(--incomplete);
   border-color: rgba(220, 38, 38, 0.2);
 }
+
+/* ===== RISK BADGES ===== */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.risk-badge .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.risk-badge.critical { background: var(--incomplete-bg); color: var(--incomplete); border: 1px solid rgba(220, 38, 38, 0.15); }
+.risk-badge.high { background: var(--partial-bg); color: var(--partial); border: 1px solid rgba(217, 119, 6, 0.15); }
+.risk-badge.medium { background: var(--complete-bg); color: var(--complete); border: 1px solid rgba(22, 163, 74, 0.15); }
+.risk-badge.low { background: var(--bg-muted); color: var(--text-muted); border: 1px solid var(--border); }
+

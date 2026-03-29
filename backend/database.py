@@ -55,9 +55,19 @@ def init_db() -> None:
                 evidence_page INTEGER,
                 format_match INTEGER, -- boolean 1/0/null
                 percentage_filled REAL NOT NULL,
+                risk_level TEXT,
+                risk_reasoning TEXT,
                 FOREIGN KEY (audit_id) REFERENCES audits (id) ON DELETE CASCADE
             )
         ''')
+        
+        # Migration: Add risk fields if they don't exist
+        cursor.execute("PRAGMA table_info(audit_results)")
+        columns = [info['name'] for info in cursor.fetchall()]
+        if 'risk_level' not in columns:
+            cursor.execute("ALTER TABLE audit_results ADD COLUMN risk_level TEXT")
+            cursor.execute("ALTER TABLE audit_results ADD COLUMN risk_reasoning TEXT")
+            print("[Database] 🔄 Migrated `audit_results` to include risk fields.")
         
         # Index for faster history lookups by date
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_audits_created_at ON audits(created_at DESC)')
@@ -102,8 +112,9 @@ def save_audit(report: AuditReport) -> None:
                 INSERT INTO audit_results (
                     audit_id, category, requirement, status, confidence_score,
                     proposal_evidence, missing_elements, page_reference,
-                    evidence_page, format_match, percentage_filled
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    evidence_page, format_match, percentage_filled,
+                    risk_level, risk_reasoning
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 report.proposal_id,
                 res.category,
@@ -115,7 +126,9 @@ def save_audit(report: AuditReport) -> None:
                 res.page_reference,
                 res.evidence_page,
                 res.format_match if res.format_match is not None else None,
-                res.percentage_filled
+                res.percentage_filled,
+                res.risk_level,
+                res.risk_reasoning
             ))
             
         conn.commit()
@@ -185,7 +198,9 @@ def get_audit(audit_id: str) -> Optional[AuditReport]:
                 page_reference=res_data['page_reference'],
                 evidence_page=res_data['evidence_page'],
                 format_match=format_match_val,
-                percentage_filled=res_data['percentage_filled']
+                percentage_filled=res_data['percentage_filled'],
+                risk_level=res_data.get('risk_level'),
+                risk_reasoning=res_data.get('risk_reasoning')
             ))
             
         return AuditReport(

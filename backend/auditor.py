@@ -101,6 +101,8 @@ For each requirement return:
 - evidence_page: same as page_reference
 - format_match: true/false if a format requirement exists; null otherwise
 - percentage_filled: 0-100
+- risk_level: "Critical", "High", "Medium", "Low", or null (evaluate ONLY for Partial/Incomplete gaps. Base severity strictly on Health & Safety impacts or heavy Resource/Financial expenditure).
+- risk_reasoning: Short justification for the risk_level; null if Complete.
 
 ⚠️ Flag as Partial rather than Complete for ANY ambiguity.
 ⚠️ Priority checks: estimate format (CSI vs Uniformat), MWDVBE % goal, bonding surety ratings,
@@ -136,6 +138,8 @@ Proposal content:
             evidence_page=d.get("evidence_page"),
             format_match=d.get("format_match"),
             percentage_filled=float(d.get("percentage_filled", 0.0)),
+            risk_level=d.get("risk_level"),
+            risk_reasoning=d.get("risk_reasoning"),
         ))
     return results
 
@@ -245,98 +249,118 @@ def _get_mock_audit(requirements: RequirementList, proposal_id: str, rfp_name: s
         "Safety": [
             {"status": "Complete", "confidence_score": 0.95, "percentage_filled": 100.0,
              "proposal_evidence": "Section 4.1 — comprehensive site safety plan per OSHA 29 CFR 1926 including fall protection, excavation safety, and hazardous materials handling.",
-             "missing_elements": [], "page_reference": 4, "evidence_page": 4, "format_match": True},
+             "missing_elements": [], "page_reference": 4, "evidence_page": 4, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
             {"status": "Partial", "confidence_score": 0.75, "percentage_filled": 60.0,
              "proposal_evidence": "Safety officer will be assigned; full-time on-site presence not confirmed.",
              "missing_elements": ["Full-time on-site designation not confirmed", "OSHA 30-Hour cert not provided"],
-             "page_reference": 5, "evidence_page": 5, "format_match": None},
+             "page_reference": 5, "evidence_page": 5, "format_match": None,
+             "risk_level": "Critical", "risk_reasoning": "Missing full-time safety designation and OSHA 30 pose severe life safety risks and OSHA violation exposure."},
         ],
         "Insurance": [
             {"status": "Partial", "confidence_score": 0.80, "percentage_filled": 50.0,
              "proposal_evidence": "We maintain comprehensive general liability insurance for all construction projects.",
              "missing_elements": ["$2M per-occurrence not stated", "$5M aggregate not confirmed"],
-             "page_reference": 12, "evidence_page": 12, "format_match": False},
+             "page_reference": 12, "evidence_page": 12, "format_match": False,
+             "risk_level": "High", "risk_reasoning": "Inadequate proof of required coverage exposes the project to significant financial risk in case of accidents."},
             {"status": "Incomplete", "confidence_score": 0.90, "percentage_filled": 0.0,
              "proposal_evidence": None,
              "missing_elements": ["Workers' comp not provided", "EMR not disclosed"],
-             "page_reference": None, "evidence_page": None, "format_match": None},
+             "page_reference": None, "evidence_page": None, "format_match": None,
+             "risk_level": "Critical", "risk_reasoning": "Lack of workers' compensation proof violates bedrock legal and resource expenditure requirements."},
         ],
         "Bonding": [
             {"status": "Complete", "confidence_score": 0.92, "percentage_filled": 100.0,
              "proposal_evidence": "Performance bond 100% contract value — Zurich Insurance, A+ XV by AM Best.",
-             "missing_elements": [], "page_reference": 14, "evidence_page": 14, "format_match": True},
+             "missing_elements": [], "page_reference": 14, "evidence_page": 14, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
             {"status": "Complete", "confidence_score": 0.90, "percentage_filled": 100.0,
              "proposal_evidence": "Payment bond 100% contract value per Miller Act.",
-             "missing_elements": [], "page_reference": 14, "evidence_page": 14, "format_match": True},
+             "missing_elements": [], "page_reference": 14, "evidence_page": 14, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
         ],
         "Credentials": [
             {"status": "Complete", "confidence_score": 0.98, "percentage_filled": 100.0,
              "proposal_evidence": "License No. CGC-12345 valid 12/2027 — copy in Appendix B.",
-             "missing_elements": [], "page_reference": 2, "evidence_page": 2, "format_match": True},
+             "missing_elements": [], "page_reference": 2, "evidence_page": 2, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
             {"status": "Complete", "confidence_score": 0.93, "percentage_filled": 100.0,
              "proposal_evidence": "Founded 2008 — 22 commercial projects >$5M in 17 years.",
-             "missing_elements": [], "page_reference": 3, "evidence_page": 3, "format_match": True},
+             "missing_elements": [], "page_reference": 3, "evidence_page": 3, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
             {"status": "Partial", "confidence_score": 0.65, "percentage_filled": 40.0,
              "proposal_evidence": "John Smith, PM — 12 years experience on large commercial projects.",
              "missing_elements": ["PMP certification not mentioned", "Only 2 similar-scope projects (3 required)"],
-             "page_reference": 8, "evidence_page": 8, "format_match": None},
+             "page_reference": 8, "evidence_page": 8, "format_match": None,
+             "risk_level": "Medium", "risk_reasoning": "Missing PM certifications can impact project timelines but don't strictly pose health or massive financial risks."},
         ],
         "Environmental": [
             {"status": "Incomplete", "confidence_score": 0.88, "percentage_filled": 0.0,
              "proposal_evidence": None,
              "missing_elements": ["SWPPP not included", "NPDES compliance not addressed"],
-             "page_reference": None, "evidence_page": None, "format_match": None},
+             "page_reference": None, "evidence_page": None, "format_match": None,
+             "risk_level": "High", "risk_reasoning": "Missing EPA compliance documentation can lead to severe site shutdowns and resource drains."},
             {"status": "Partial", "confidence_score": 0.70, "percentage_filled": 30.0,
              "proposal_evidence": "All waste disposed per applicable regulations.",
              "missing_elements": ["EPA 40 CFR Part 261 not cited", "Hazardous waste procedures not detailed"],
-             "page_reference": 22, "evidence_page": 22, "format_match": None},
+             "page_reference": 22, "evidence_page": 22, "format_match": None,
+             "risk_level": "Critical", "risk_reasoning": "Undefined hazardous waste protocols present severe health & environmental safety risks."},
         ],
         "Materials": [
             {"status": "Complete", "confidence_score": 0.96, "percentage_filled": 100.0,
              "proposal_evidence": "Concrete — ASTM C94/C94M, min 4,000 PSI at 28 days per Sec. 03300.",
-             "missing_elements": [], "page_reference": 18, "evidence_page": 18, "format_match": True},
+             "missing_elements": [], "page_reference": 18, "evidence_page": 18, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
             {"status": "Partial", "confidence_score": 0.72, "percentage_filled": 55.0,
              "proposal_evidence": "Steel per ASTM A992.",
              "missing_elements": ["Buy America cert not provided", "ASTM A992M not referenced"],
-             "page_reference": 19, "evidence_page": 19, "format_match": None},
+             "page_reference": 19, "evidence_page": 19, "format_match": None,
+             "risk_level": "Medium", "risk_reasoning": "Non-compliance with Buy America limits contract eligibility but isn't a direct life-safety risk."},
         ],
         "Timeline": [
             {"status": "Complete", "confidence_score": 0.94, "percentage_filled": 100.0,
              "proposal_evidence": "Substantial completion within 16 months of NTP — 2 months ahead of requirement.",
-             "missing_elements": [], "page_reference": 6, "evidence_page": 6, "format_match": True},
+             "missing_elements": [], "page_reference": 6, "evidence_page": 6, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
             {"status": "Incomplete", "confidence_score": 0.85, "percentage_filled": 0.0,
              "proposal_evidence": None,
              "missing_elements": ["CPM schedule not included", "30-day submittal not addressed"],
-             "page_reference": None, "evidence_page": None, "format_match": None},
+             "page_reference": None, "evidence_page": None, "format_match": None,
+             "risk_level": "Medium", "risk_reasoning": "Missing CPM schedule delays planning but does not immediately endanger health or enormous capital."},
         ],
         "Staffing": [
             {"status": "Partial", "confidence_score": 0.78, "percentage_filled": 65.0,
              "proposal_evidence": "Resumes — John Smith (PM), Mike Johnson (Super) in Appendix C.",
              "missing_elements": ["QC Manager resume not provided"],
-             "page_reference": 30, "evidence_page": 30, "format_match": None},
+             "page_reference": 30, "evidence_page": 30, "format_match": None,
+             "risk_level": "High", "risk_reasoning": "Missing QC Manager resume risks significant rework loops and project delays."},
         ],
         "Financial": [
             {"status": "Incomplete", "confidence_score": 0.92, "percentage_filled": 0.0,
              "proposal_evidence": None,
              "missing_elements": ["Audited financial statements not included", "3 years of records required"],
-             "page_reference": None, "evidence_page": None, "format_match": None},
+             "page_reference": None, "evidence_page": None, "format_match": None,
+             "risk_level": "Critical", "risk_reasoning": "Failure to prove financial solvency risks completely defaulting on the project scope."},
         ],
         "References": [
             {"status": "Partial", "confidence_score": 0.82, "percentage_filled": 60.0,
              "proposal_evidence": "3 references: City Hall (2022), Harbor Bridge (2023), Water Plant (2021).",
              "missing_elements": ["Only 3 references (5 required)", "Contact info incomplete for 1"],
-             "page_reference": 35, "evidence_page": 35, "format_match": None},
+             "page_reference": 35, "evidence_page": 35, "format_match": None,
+             "risk_level": "Low", "risk_reasoning": "Missing 2 references is a minor administrative deduction against the scoring metric."},
         ],
         "Quality Control": [
             {"status": "Partial", "confidence_score": 0.68, "percentage_filled": 45.0,
              "proposal_evidence": "QC program includes inspections and material testing.",
              "missing_elements": ["USACE ER 1180-1-6 not referenced", "QC Manager not named"],
-             "page_reference": 24, "evidence_page": 24, "format_match": None},
+             "page_reference": 24, "evidence_page": 24, "format_match": None,
+             "risk_level": "Medium", "risk_reasoning": "Incomplete QC details indicate process risk, but aren't currently posing severe safety hazards."},
         ],
         "Legal": [
             {"status": "Complete", "confidence_score": 0.97, "percentage_filled": 100.0,
              "proposal_evidence": "Certified not debarred — SAM.gov #ABCD1234.",
-             "missing_elements": [], "page_reference": 40, "evidence_page": 40, "format_match": True},
+             "missing_elements": [], "page_reference": 40, "evidence_page": 40, "format_match": True,
+             "risk_level": None, "risk_reasoning": None},
         ],
     }
 
@@ -348,7 +372,8 @@ def _get_mock_audit(requirements: RequirementList, proposal_id: str, rfp_name: s
             m = {"status": "Incomplete", "confidence_score": 0.85, "percentage_filled": 0.0,
                  "proposal_evidence": None,
                  "missing_elements": [f"No information found: {req.requirement}"],
-                 "page_reference": None, "evidence_page": None, "format_match": None}
+                 "page_reference": None, "evidence_page": None, "format_match": None,
+                 "risk_level": "Medium", "risk_reasoning": "Unidentified requirement risk due to null payload."}
         results.append(ComplianceObject(category=req.category, requirement=req.requirement, **m))
 
     critical = [

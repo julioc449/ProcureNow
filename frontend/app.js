@@ -327,6 +327,23 @@ function renderDashboard(data) {
 
     // Render categories
     renderCategories(data.audit_results);
+
+    // Render Priority Matrix
+    const priorityItems = data.audit_results.filter(r => 
+        (r.status === 'Partial' || r.status === 'Incomplete') && 
+        (r.risk_level === 'Critical' || r.risk_level === 'High')
+    );
+    
+    const pmSection = document.getElementById('priorityMatrixSection');
+    const pmContainer = document.getElementById('priorityMatrixContainer');
+    
+    if (priorityItems.length > 0) {
+        pmSection.style.display = 'block';
+        pmContainer.innerHTML = priorityItems.map(r => renderRequirementCard(r, true)).join('');
+    } else {
+        pmSection.style.display = 'none';
+        pmContainer.innerHTML = '';
+    }
 }
 
 function animateProgressRing(data) {
@@ -443,10 +460,18 @@ function renderCategories(results) {
     applyFilter(activeFilter);
 }
 
-function renderRequirementCard(r) {
+function renderRequirementCard(r, isPriorityMatrix = false) {
     const statusClass = r.status.toLowerCase();
     const pctFilled = r.status === 'Complete' ? 100 : (r.percentage_filled || 0);
     const confidencePct = Math.round(r.confidence_score * 100);
+
+    const riskHtml = r.risk_level && r.status !== 'Complete' ? 
+        `<span class="risk-badge ${r.risk_level.toLowerCase()}">
+            <span class="material-symbols-outlined">
+                ${r.risk_level === 'Critical' ? 'gavel' : r.risk_level === 'High' ? 'warning' : r.risk_level === 'Medium' ? 'info' : 'check'}
+            </span>
+            ${r.risk_level} Risk
+         </span>` : '';
 
     const evidenceHtml = r.proposal_evidence && r.proposal_evidence !== 'N/A'
         ? `<div class="detail-block">
@@ -483,11 +508,24 @@ function renderRequirementCard(r) {
                <p style="color: var(--complete);">All elements satisfied</p>
            </div>`;
 
+    const reasoningHtml = r.risk_reasoning && r.status !== 'Complete' ? 
+        `<div class="detail-block">
+             <h4>
+                 <span class="material-symbols-outlined">policy</span>
+                 Risk Analysis
+             </h4>
+             <p style="color: var(--text-main); font-weight: 500;">${escapeHtml(r.risk_reasoning)}</p>
+         </div>` : '';
+
     return `
         <div class="requirement-card" data-status="${r.status}" onclick="toggleCard(this)">
             <div class="requirement-card-header">
                 <div class="status-indicator ${statusClass}"></div>
-                <div class="requirement-text">${escapeHtml(r.requirement)}</div>
+                <div class="requirement-text">
+                    ${isPriorityMatrix ? `<span style="color: var(--text-muted); font-size: 0.85em; font-weight: 500; display: block; margin-bottom: 2px;">${escapeHtml(r.category)}</span>` : ''}
+                    ${escapeHtml(r.requirement)}
+                </div>
+                ${riskHtml}
                 <span class="status-badge ${statusClass}">${r.status}</span>
                 <span class="confidence-mini">${confidencePct}%</span>
                 <span class="expand-icon">
@@ -496,6 +534,7 @@ function renderRequirementCard(r) {
             </div>
             <div class="requirement-detail">
                 <div class="detail-content">
+                    ${reasoningHtml}
                     ${evidenceHtml}
                     ${missingHtml}
                 </div>

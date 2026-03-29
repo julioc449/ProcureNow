@@ -40,6 +40,14 @@ class ComplianceObject(BaseModel):
         default=0.0, ge=0.0, le=100.0,
         description="For Partial/Incomplete items, how much of this requirement has been addressed (0-100%)"
     )
+    risk_level: Optional[Literal["Critical", "High", "Medium", "Low"]] = Field(
+        None,
+        description="Severity of the gap in terms of health, safety, and resource expenditure (Only for Partial/Incomplete)"
+    )
+    risk_reasoning: Optional[str] = Field(
+        None,
+        description="Justification for the assigned risk level"
+    )
 
 
 class RequirementItem(BaseModel):
