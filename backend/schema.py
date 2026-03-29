@@ -28,6 +28,14 @@ class ComplianceObject(BaseModel):
         None,
         description="Page number in the proposal where the relevant evidence was found"
     )
+    evidence_page: Optional[int] = Field(
+        None,
+        description="Exact page number cited from the routed proposal section"
+    )
+    format_match: Optional[bool] = Field(
+        None,
+        description="Whether the submission format matches the RFP-specified format (e.g. CSI vs Uniformat)"
+    )
     percentage_filled: float = Field(
         default=0.0, ge=0.0, le=100.0,
         description="For Partial/Incomplete items, how much of this requirement has been addressed (0-100%)"
@@ -55,6 +63,10 @@ class AuditReport(BaseModel):
     rfp_name: str = Field(default="", description="Name/title of the RFP document")
     audit_results: List[ComplianceObject] = Field(
         description="List of evaluated compliance objects, one per requirement"
+    )
+    critical_omissions: List[str] = Field(
+        default_factory=list,
+        description="High-priority issues that must be addressed before submission is compliant"
     )
 
     @property
@@ -96,5 +108,6 @@ class AuditReport(BaseModel):
             "partial": self.partial_count,
             "incomplete": self.incomplete_count,
             "overall_percentage": self.overall_percentage,
+            "critical_omissions": self.critical_omissions,
             "audit_results": [r.model_dump() for r in self.audit_results],
         }

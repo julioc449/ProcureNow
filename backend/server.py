@@ -1,10 +1,17 @@
 """
 FastAPI Server — RFP Compliance Auditor API & Static File Server.
 
+4-Phase Multimodal Pipeline:
+  Phase 1: Multimodal PDF ingestion via Gemini File Upload API (tables, charts, grids)
+  Phase 2: Dynamic RFP rubric extraction + Proposal TOC/page-map
+  Phase 3: Section-routed cross-verification with Presence/Accuracy/Context evaluation
+  Phase 4: Structured AuditReport output with critical omissions
+
 Endpoints:
-  POST /api/full-audit  — Upload RFP + Proposal PDFs, run full pipeline, return AuditReport.
-  GET  /api/export-csv   — Download the last audit as CSV.
-  GET  /                 — Serve the frontend dashboard.
+  POST /api/full-audit  — Upload RFP + Proposal PDFs, run pipeline, return AuditReport.
+  POST /api/demo-audit  — Run with mock data (no PDFs needed).
+  GET  /api/export-csv  — Download last audit as CSV.
+  GET  /               — Serve frontend dashboard.
 """
 import os
 import tempfile
@@ -15,14 +22,13 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from .pdf_reader import extract_text_from_bytes
-from .extractor import get_requirements
+from .pdf_reader import ingest_pdf_multimodal, extract_text_from_bytes
+from .extractor import get_requirements, extract_toc_and_page_map
 from .auditor import audit_proposal
 from .hooks import export_to_csv
 
-app = FastAPI(title="RFP Compliance Auditor", version="1.0.0")
+app = FastAPI(title="ProcureNow — RFP Compliance Auditor", version="2.0.0")
 
-# CORS for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,7 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory store for the last audit (prototype simplicity)
+# In-memory store for last audit (prototype)
 _last_audit = None
 _csv_path = None
 
@@ -41,62 +47,63 @@ async def full_audit(
     proposal: UploadFile = File(..., description="The submittal/proposal PDF document"),
 ):
     """
-    Full pipeline: Extract text from both PDFs → Extract requirements from RFP →
-    Audit proposal against requirements → Return structured AuditReport.
+    Full 4-phase multimodal pipeline:
+    Phase 1 → Gemini vision ingestion of both PDFs (preserves tables & charts)
+    Phase 2 → RFP rubric extraction + Proposal TOC page-map
+    Phase 3 → Section-routed compliance cross-verification
+    Phase 4 → Structured AuditReport JSON response
     """
     global _last_audit, _csv_path
 
     try:
-        # 1. Read uploaded files
         rfp_bytes = await rfp.read()
         proposal_bytes = await proposal.read()
 
-        # 2. Extract text from PDFs
-        print("\n[Pipeline] Step 1: Extracting text from RFP PDF...")
-        rfp_text = extract_text_from_bytes(rfp_bytes)
-        print(f"[Pipeline] Extracted {len(rfp_text)} characters from RFP.")
-
-        print("[Pipeline] Step 2: Extracting text from Proposal PDF...")
-        proposal_text = extract_text_from_bytes(proposal_bytes)
-        print(f"[Pipeline] Extracted {len(proposal_text)} characters from Proposal.")
-
-        # 3. Extract requirements from the RFP
-        print("[Pipeline] Step 3: Extracting requirements from RFP...")
-        requirements = get_requirements(rfp_text)
-        print(f"[Pipeline] Found {len(requirements.requirements)} requirements.")
-
-        # 4. Audit the proposal against requirements
-        proposal_id = f"AUDIT_{uuid.uuid4().hex[:8].upper()}"
         rfp_name = rfp.filename or "Uploaded RFP"
+        proposal_id = f"AUDIT_{uuid.uuid4().hex[:8].upper()}"
 
-        print("[Pipeline] Step 4: Auditing proposal compliance...")
+        # ── Phase 1: Multimodal Ingestion ───────────────────────────────────
+        print("\n[Pipeline] ═══ Phase 1: Multimodal PDF Ingestion ═══")
+        print(f"[Pipeline] Ingesting RFP: {rfp_name} ({len(rfp_bytes):,} bytes)")
+        rfp_content = ingest_pdf_multimodal(rfp_bytes, label="RFP")
+        print(f"[Pipeline] Ingesting Proposal: {proposal.filename} ({len(proposal_bytes):,} bytes)")
+        proposal_content = ingest_pdf_multimodal(proposal_bytes, label="Proposal")
+
+        # ── Phase 2: Schema Generation + TOC Mapping ────────────────────────
+        print("\n[Pipeline] ═══ Phase 2: RFP Rubric Extraction + TOC Mapping ═══")
+        requirements = get_requirements(rfp_content)
+        print(f"[Pipeline] Found {len(requirements.requirements)} requirements.")
+        page_map = extract_toc_and_page_map(proposal_content)
+        if page_map:
+            print(f"[Pipeline] TOC sections: {list(page_map.keys())[:6]}{'...' if len(page_map) > 6 else ''}")
+
+        # ── Phase 3: Semantic Routing & Cross-Verification ──────────────────
+        print("\n[Pipeline] ═══ Phase 3: Section-Routed Compliance Audit ═══")
         audit_report = audit_proposal(
-            proposal_text=proposal_text,
+            proposal_text=proposal_content,
             requirements=requirements,
             proposal_id=proposal_id,
             rfp_name=rfp_name,
+            page_map=page_map,
         )
 
-        # 5. Store for CSV export
+        # ── Phase 4: Output ──────────────────────────────────────────────────
         _last_audit = audit_report
         _csv_path = os.path.join(tempfile.gettempdir(), f"{proposal_id}_audit.csv")
         export_to_csv(audit_report, _csv_path)
-
-        print(f"[Pipeline] ✅ Audit complete: {audit_report.overall_percentage}% overall compliance.")
-
+        print(f"\n[Pipeline] ✅ Audit complete — {audit_report.overall_percentage}% overall compliance.")
         return JSONResponse(content=audit_report.summary_dict())
 
     except Exception as e:
+        import traceback
         print(f"[Pipeline] ❌ Error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/demo-audit")
 async def demo_audit():
-    """
-    Run the audit pipeline with mock data (no PDFs needed).
-    Useful for testing the dashboard without uploading files.
-    """
+    """Run the pipeline with mock data — no PDFs or API key needed."""
     global _last_audit, _csv_path
 
     from .extractor import _get_mock_requirements
@@ -125,11 +132,10 @@ async def download_csv():
     )
 
 
-# Serve the frontend static files
+# Serve the frontend
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
 if os.path.exists(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
-
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,65 +1,77 @@
 """
-Extractor Module — Extracts structured requirements from RFP text.
+Extractor Module — Phase 2 of the compliance pipeline.
 
-Hackathon: Uses Gemini via google-genai with structured JSON output.
-Future: Docling layout-aware OCR → Vector DB embedding.
+1. `get_requirements()`:          Extracts the RFP's structured requirement rubric.
+2. `extract_toc_and_page_map()`:  Maps the Proposal's TOC to page ranges for routing.
+
+Rate limiting: all Gemini calls go through rate_limiter.throttled_call().
 """
-import os
+from __future__ import annotations
+
+import json
+
 from google import genai
+
+from . import config
+from .rate_limiter import throttled_call
 from .schema import RequirementList
 
 
-# Maximum characters to send to the LLM in a single extraction call.
-# Gemini 1.5/2.0 Flash supports very large contexts, but we chunk for reliability.
-MAX_CONTEXT_CHARS = 120_000
+# ---------------------------------------------------------------------------
+# Phase 2a — RFP Requirement Extraction
+# ---------------------------------------------------------------------------
 
-
-def get_requirements(rfp_text: str) -> RequirementList:
+def get_requirements(rfp_content: str) -> RequirementList:
     """
-    Extracts mandatory requirements from RFP document text.
-
-    Args:
-        rfp_text: Full text extracted from the RFP PDF.
-
-    Returns:
-        RequirementList containing all identified requirements.
+    Extract mandatory requirements from rich Markdown RFP content (Phase 1 output).
+    Uses MODEL_REASONING (gemini-2.5-flash) for accurate structured extraction.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print("[Extractor] GEMINI_API_KEY not found — using mock data.")
+    if not config.GEMINI_API_KEY:
+        print("[Extractor] No API key — using mock requirements.")
         return _get_mock_requirements()
 
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        truncated = rfp_content[:config.MAX_CONTEXT_CHARS]
 
-        # Truncate to fit context window if needed
-        truncated = rfp_text[:MAX_CONTEXT_CHARS]
+        prompt = f"""You are an expert construction procurement officer and licensed professional engineer
+specializing in public sector RFP analysis and proposal compliance.
 
-        prompt = f"""You are an expert civil engineer and procurement officer specializing in public sector RFP analysis.
+Analyze the following RFP document and extract EVERY mandatory requirement that a responding firm must satisfy.
 
-Analyze the following RFP document and extract ALL mandatory requirements that a responding company must satisfy.
+Pay special attention to:
+- "Step 1 Deliverables" / "Proposal Documents" sections (list every required submission separately)
+- Cover Letter content mandates (specific topics that must be addressed)
+- Estimate format requirements — is CSI MasterFormat or Uniformat required? Note exactly which.
+- General Conditions breakdown and any required allowances with dollar amounts
+- Project Management Plan components
+- Quality Control Plan (e.g., USACE ER 1180-1-6 compliance, designated QC Manager)
+- Safety Plan and Activity Hazard Analysis (AHA) requirements
+- MWDVBE / DBE / SBE participation goals — extract the exact percentage target
+- Site Utilization Plan specifics
+- Schedule requirements (CPM, Primavera P6, submission deadline after NTP)
+- Insurance types and exact coverage amounts
+- Bonding requirements and surety ratings
+- Personnel qualifications (PMP, OSHA 30, PE licenses, years of experience)
+- License requirements by state
+- Reference project requirements (quantity, dollar value, recency window)
+- Environmental compliance (SWPPP, NPDES, EPA standards)
+- Debarment and legal certifications
 
 For each requirement:
-- Assign a clear category (e.g., 'Safety', 'Insurance', 'Credentials', 'Environmental', 'Materials', 'Timeline', 'Bonding', 'Staffing', 'Equipment', 'Permits', 'Quality Control', 'Financial', 'Legal', 'References', 'Technical Specifications')
-- Extract the exact requirement text. Be specific — include quantities, standards, certifications, and deadlines.
+- category: pick the most specific from: Safety, Insurance, Bonding, Credentials, Environmental,
+  Materials, Timeline, Staffing, Equipment, Permits, Quality Control, Financial, Legal, References,
+  Technical Specifications, MWDVBE/DBE Compliance, Estimate Format, Deliverables, Site Logistics, Schedule
+- requirement: EXACT text including quantities, dollar amounts, standard citations, deadlines, certifications
 
-Focus on requirements related to:
-1. Safety plans and OSHA compliance
-2. Insurance and bonding requirements
-3. Company credentials, certifications, and licenses
-4. Risk management and mitigation plans
-5. Environmental compliance
-6. Staffing and key personnel qualifications
-7. Equipment and materials specifications
-8. Timeline and milestone requirements
-9. Financial qualifications and bid bonds
-10. References and past performance
+Be granular — one requirement per item, never bundle multiple requirements together.
 
 RFP Document:
 {truncated}"""
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
+        response = throttled_call(
+            client.models.generate_content,
+            model=config.MODEL_REASONING,
             contents=prompt,
             config={
                 "response_mime_type": "application/json",
@@ -67,13 +79,67 @@ RFP Document:
             },
         )
         result = RequirementList.model_validate_json(response.text)
-        print(f"[Extractor] Extracted {len(result.requirements)} requirements via Gemini.")
+        print(f"[Extractor] ✅ Extracted {len(result.requirements)} requirements.")
         return result
 
     except Exception as e:
-        print(f"[Extractor] LLM error: {e} — falling back to mock data.")
+        print(f"[Extractor] ❌ Error: {e} — falling back to mock requirements.")
         return _get_mock_requirements()
 
+
+# ---------------------------------------------------------------------------
+# Phase 2b — Proposal TOC / Page-Map Extraction
+# ---------------------------------------------------------------------------
+
+def extract_toc_and_page_map(proposal_content: str) -> dict[str, tuple[int, int]]:
+    """
+    Build a section → (start_page, end_page) map from the Proposal's TOC.
+    Sends only the first ~15k chars (where TOC always appears).
+    Uses MODEL_VISION (lighter model) since this is a simple structured task.
+    """
+    if not config.GEMINI_API_KEY:
+        return {}
+
+    try:
+        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        toc_section = proposal_content[:15_000]
+
+        prompt = f"""Extract the Table of Contents from this construction proposal document.
+
+Return a JSON object mapping each section name to [start_page, end_page].
+Example: {{"Cover Letter": [1, 2], "CSI Estimate": [3, 45], "Safety Plan": [46, 60]}}
+
+Rules:
+- Use exact section names as they appear in the TOC
+- Estimate end pages from next section's start
+- If no TOC visible, return {{}}
+
+Document:
+{toc_section}"""
+
+        response = throttled_call(
+            client.models.generate_content,
+            model=config.MODEL_VISION,
+            contents=prompt,
+            config={"response_mime_type": "application/json"},
+        )
+
+        raw = json.loads(response.text)
+        page_map: dict[str, tuple[int, int]] = {}
+        for section, pages in raw.items():
+            if isinstance(pages, list) and len(pages) == 2:
+                page_map[section] = (int(pages[0]), int(pages[1]))
+        print(f"[Extractor] ✅ TOC: mapped {len(page_map)} sections.")
+        return page_map
+
+    except Exception as e:
+        print(f"[Extractor] TOC extraction failed: {e} — auditor will use full document.")
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# Mock data for demo / no-key fallback
+# ---------------------------------------------------------------------------
 
 def _get_mock_requirements() -> RequirementList:
     """Comprehensive mock requirements for testing without an API key."""
