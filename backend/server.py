@@ -26,6 +26,7 @@ from .pdf_reader import ingest_pdf_multimodal, extract_text_from_bytes
 from .extractor import get_requirements, extract_toc_and_page_map
 from .auditor import audit_proposal
 from .hooks import export_to_csv
+from .reporter import generate_audit_report
 from . import database
 
 app = FastAPI(title="ProcureNow — RFP Compliance Auditor", version="2.0.0")
@@ -145,22 +146,20 @@ async def delete_audit(audit_id: str):
     return JSONResponse(content={"success": True})
 
 
-@app.get("/api/export-csv/{audit_id}")
-async def download_csv(audit_id: str):
-    """Download a specific audit report as a CSV file."""
-    csv_path = _get_csv_path(audit_id)
-    
-    # If the file doesn't exist locally (server restart etc), generate it
-    if not os.path.exists(csv_path):
-        audit = database.get_audit(audit_id)
-        if not audit:
-            raise HTTPException(status_code=404, detail="Audit not found")
-        export_to_csv(audit, csv_path)
+@app.get("/api/export-pdf/{audit_id}")
+async def download_pdf(audit_id: str):
+    """Download a specific audit report as a branded PDF file."""
+    audit = database.get_audit(audit_id)
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
         
+    # Generate PDF (returns temp path)
+    pdf_path = generate_audit_report(audit.summary_dict())
+    
     return FileResponse(
-        csv_path,
-        media_type="text/csv",
-        filename=f"compliance_audit_{audit_id}.csv",
+        pdf_path,
+        media_type="application/pdf",
+        filename=f"Compliance_Audit_{audit_id}.pdf"
     )
 
 

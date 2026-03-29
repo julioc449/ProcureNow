@@ -8,6 +8,7 @@ let rfpFile = null;
 let proposalFile = null;
 let auditData = null;
 let activeFilter = 'all';
+let currentProposalId = null;
 
 // ─── DOM Elements ───
 const rfpZone = document.getElementById('rfpZone');
@@ -35,12 +36,16 @@ const exportCsvBtn      = document.getElementById('exportCsvBtn');
 const newAuditBtn       = document.getElementById('newAuditBtn');
 const filterBar         = document.getElementById('filterBar');
 
-// Routing elements
 const navDashboard      = document.getElementById('navDashboard');
 const navLibrary        = document.getElementById('navLibrary');
+const navPdfViewer      = document.getElementById('navPdfViewer');
+
+const pdfViewerPage     = document.getElementById('pdfViewerPage');
 const complianceLibrary = document.getElementById('complianceLibrary');
+
 const libraryTableBody  = document.getElementById('libraryTableBody');
 const libraryEmptyState = document.getElementById('libraryEmptyState');
+const pdfViewerCardsContainer = document.getElementById('pdfViewerCardsContainer');
 
 
 // ─── Category Material Icons ───
@@ -64,6 +69,7 @@ const CATEGORY_ICONS = {
 
 // ─── File Upload Handlers ───
 function setupDropZone(zone, input, fileNameEl, fileType) {
+    if (!zone) return;
     ['dragenter', 'dragover'].forEach(evt => {
         zone.addEventListener(evt, e => {
             e.preventDefault();
@@ -126,6 +132,15 @@ async function runFullAudit() {
         });
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         auditData = await res.json();
+        
+        currentProposalId = auditData.proposal_id;
+
+        // Setup PDF viewer url mapped to the current uploaded file
+        if (proposalFile) {
+            if (window.currentPdfUrl) URL.revokeObjectURL(window.currentPdfUrl);
+            window.currentPdfUrl = URL.createObjectURL(proposalFile);
+        }
+
         renderDashboard(auditData);
     } catch (err) {
         hideLoading();
@@ -139,10 +154,11 @@ async function runDemoAudit() {
         const res = await fetch('/api/demo-audit', { method: 'POST' });
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         auditData = await res.json();
+        currentProposalId = auditData.proposal_id;
         renderDashboard(auditData);
     } catch (err) {
         hideLoading();
-        alert(`Demo audit failed: ${err.message}\n\nMake sure the server is running on http://localhost:8000`);
+        alert(`Demo audit failed: ${err.message}`);
     }
 }
 
@@ -162,12 +178,14 @@ function showDashboard() {
     loadingOverlay.classList.remove('active');
     uploadSection.style.display = 'none';
     complianceLibrary.classList.remove('active');
+    pdfViewerPage.classList.remove('active');
     dashboard.classList.add('active');
 }
 
 function resetToUpload() {
     dashboard.classList.remove('active');
     complianceLibrary.classList.remove('active');
+    pdfViewerPage.classList.remove('active');
     uploadSection.style.display = 'block';
     rfpFile = null;
     proposalFile = null;
@@ -179,16 +197,22 @@ function resetToUpload() {
     proposalInput.value = '';
     updateAnalyzeButton();
     auditData = null;
+    currentProposalId = null;
 }
 
 // ─── Routing ───
 navDashboard.addEventListener('click', () => {
     navDashboard.classList.add('active');
     navLibrary.classList.remove('active');
+    navPdfViewer.classList.remove('active');
     complianceLibrary.classList.remove('active');
+    pdfViewerPage.classList.remove('active');
+    
     if (auditData) {
         dashboard.classList.add('active');
+        uploadSection.style.display = 'none';
     } else {
+        dashboard.classList.remove('active');
         uploadSection.style.display = 'block';
     }
 });
@@ -196,10 +220,29 @@ navDashboard.addEventListener('click', () => {
 navLibrary.addEventListener('click', () => {
     navLibrary.classList.add('active');
     navDashboard.classList.remove('active');
+    navPdfViewer.classList.remove('active');
+    
     dashboard.classList.remove('active');
+    pdfViewerPage.classList.remove('active');
     uploadSection.style.display = 'none';
+    
     complianceLibrary.classList.add('active');
     loadLibrary();
+});
+
+navPdfViewer.addEventListener('click', () => {
+    navPdfViewer.classList.add('active');
+    navDashboard.classList.remove('active');
+    navLibrary.classList.remove('active');
+    
+    dashboard.classList.remove('active');
+    complianceLibrary.classList.remove('active');
+    uploadSection.style.display = 'none';
+    
+    pdfViewerPage.classList.add('active');
+    if (auditData) {
+        renderPdfViewerPage(auditData);
+    }
 });
 
 // ─── Compliance Library Logic ───
@@ -248,9 +291,9 @@ async function loadLibrary() {
                             <button class="btn-icon" title="View Report" onclick="viewAudit('${audit.id}')">
                                 <span class="material-symbols-outlined">visibility</span>
                             </button>
-                            <a href="/api/export-csv/${audit.id}" class="btn-icon" title="Export CSV" download>
-                                <span class="material-symbols-outlined">download</span>
-                            </a>
+                             <button class="btn-icon" title="Export PDF" onclick="downloadReport('pdf', '${audit.id}')">
+                                <span class="material-symbols-outlined">picture_as_pdf</span>
+                            </button>
                             <button class="btn-icon danger" title="Delete Audit" onclick="deleteAudit('${audit.id}')">
                                 <span class="material-symbols-outlined">delete</span>
                             </button>
@@ -277,6 +320,7 @@ window.viewAudit = async function(id) {
         const res = await fetch(`/api/audits/${id}`);
         if (!res.ok) throw new Error('Audit not found');
         auditData = await res.json();
+        currentProposalId = auditData.proposal_id;
         
         // Switch nav state manually
         navDashboard.classList.add('active');
@@ -297,12 +341,11 @@ window.deleteAudit = async function(id) {
         const res = await fetch(`/api/audits/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Failed to delete audit');
         
-        // If viewing the deleted audit, reset to upload
         if (auditData && auditData.proposal_id === id) {
             resetToUpload();
-            navLibrary.click(); // force library view
+            navLibrary.click();
         } else {
-            loadLibrary();      // just refresh table
+            loadLibrary();
         }
     } catch (err) {
         alert(`Failed to delete: ${err.message}`);
@@ -313,22 +356,33 @@ window.deleteAudit = async function(id) {
 function renderDashboard(data) {
     showDashboard();
 
-    // Header info
     rfpTitle.textContent = data.rfp_name || 'RFP Document';
     proposalId.textContent = `AUDIT ID: ${data.proposal_id || ''}`;
 
-    // Stats
     animateNumber(completeCount, data.complete);
     animateNumber(partialCount, data.partial);
     animateNumber(incompleteCount, data.incomplete);
 
-    // Progress ring
     animateProgressRing(data);
-
-    // Render categories
     renderCategories(data.audit_results);
 
-    // Render Priority Matrix
+    // Update Export buttons (already in template)
+    const summaryRow = document.querySelector('.summary-row');
+    const existingActions = summaryRow.querySelector('.summary-actions');
+    if (existingActions) existingActions.remove();
+
+    const actions = document.createElement('div');
+    actions.className = 'summary-actions';
+    actions.innerHTML = `
+        <button class="btn btn-secondary" onclick="downloadReport('csv')">
+            <span class="material-symbols-outlined">download</span> Export CSV
+        </button>
+        <button class="btn btn-primary" onclick="downloadReport('pdf')">
+            <span class="material-symbols-outlined">picture_as_pdf</span> Export PDF Report
+        </button>
+    `;
+    summaryRow.appendChild(actions);
+
     const priorityItems = data.audit_results.filter(r => 
         (r.status === 'Partial' || r.status === 'Incomplete') && 
         (r.risk_level === 'Critical' || r.risk_level === 'High')
@@ -346,8 +400,20 @@ function renderDashboard(data) {
     }
 }
 
+function renderPdfViewerPage(data) {
+    renderCategories(data.audit_results, pdfViewerCardsContainer);
+    const pdfFrame = document.getElementById('proposalPdfFrame');
+    if (window.currentPdfUrl && pdfFrame) {
+        if (!pdfFrame.src.includes(window.currentPdfUrl)) {
+            pdfFrame.src = window.currentPdfUrl;
+        }
+    } else if (pdfFrame) {
+        pdfFrame.src = "about:blank";
+    }
+}
+
 function animateProgressRing(data) {
-    const C = 2 * Math.PI * 65; // circumference for r=65
+    const C = 2 * Math.PI * 65;
     const total = data.complete + data.partial + data.incomplete;
     if (total === 0) return;
 
@@ -355,7 +421,6 @@ function animateProgressRing(data) {
     const partialLen    = (data.partial    / total) * C;
     const incompleteLen = (data.incomplete / total) * C;
 
-    // Rotation offsets so each arc starts where the previous one ends
     const partialStartDeg    = (data.complete / total) * 360;
     const incompleteStartDeg = ((data.complete + data.partial) / total) * 360;
 
@@ -363,7 +428,6 @@ function animateProgressRing(data) {
     ringPartial.setAttribute('transform',    `rotate(${partialStartDeg}, 75, 75)`);
     ringIncomplete.setAttribute('transform', `rotate(${incompleteStartDeg}, 75, 75)`);
 
-    // Trigger CSS transition by setting dasharray in next frame
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             ringComplete.style.strokeDasharray   = `${completeLen}, ${C}`;
@@ -372,25 +436,19 @@ function animateProgressRing(data) {
         });
     });
 
-    // Animate percentage number
     animateValue(progressText, 0, data.overall_percentage, 1500);
 }
 
 function animateValue(el, start, end, duration) {
     const startTime = performance.now();
     const rounded = Math.round(end * 10) / 10;
-
     function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
         const ease = 1 - Math.pow(1 - progress, 3);
         const current = start + (rounded - start) * ease;
-
         el.innerHTML = `${current.toFixed(1)}<span>%</span>`;
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
+        if (progress < 1) requestAnimationFrame(update);
     }
     requestAnimationFrame(update);
 }
@@ -398,7 +456,6 @@ function animateValue(el, start, end, duration) {
 function animateNumber(el, target) {
     const duration = 1000;
     const startTime = performance.now();
-
     function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
@@ -410,17 +467,14 @@ function animateNumber(el, target) {
     requestAnimationFrame(update);
 }
 
-function renderCategories(results) {
-    categoriesContainer.innerHTML = '';
-
-    // Group by category
+function renderCategories(results, targetContainer = categoriesContainer) {
+    targetContainer.innerHTML = '';
     const grouped = {};
     results.forEach(r => {
         if (!grouped[r.category]) grouped[r.category] = [];
         grouped[r.category].push(r);
     });
 
-    // Sort categories: most incomplete first
     const sortedCategories = Object.entries(grouped).sort((a, b) => {
         const scoreA = a[1].reduce((s, r) => s + (r.status === 'Incomplete' ? 2 : r.status === 'Partial' ? 1 : 0), 0);
         const scoreB = b[1].reduce((s, r) => s + (r.status === 'Incomplete' ? 2 : r.status === 'Partial' ? 1 : 0), 0);
@@ -453,10 +507,8 @@ function renderCategories(results) {
                 ${items.map(r => renderRequirementCard(r)).join('')}
             </div>
         `;
-        categoriesContainer.appendChild(section);
+        targetContainer.appendChild(section);
     });
-
-    // Apply any active filter
     applyFilter(activeFilter);
 }
 
@@ -480,7 +532,7 @@ function renderRequirementCard(r, isPriorityMatrix = false) {
                    Evidence from Proposal
                </h4>
                <p class="evidence-quote">${escapeHtml(r.proposal_evidence)}</p>
-               ${r.page_reference ? `<div class="page-ref"><span class="material-symbols-outlined" style="font-size:14px">insert_drive_file</span> Page ${r.page_reference}</div>` : ''}
+               ${r.page_reference ? `<div class="page-ref" onclick="scrollToPdfPage(${r.page_reference}, event)"><span class="material-symbols-outlined" style="font-size:14px">insert_drive_file</span> Page ${r.page_reference}</div>` : ''}
            </div>`
         : `<div class="detail-block">
                <h4>
@@ -527,7 +579,7 @@ function renderRequirementCard(r, isPriorityMatrix = false) {
                 </div>
                 ${riskHtml}
                 <span class="status-badge ${statusClass}">${r.status}</span>
-                <span class="confidence-mini">${confidencePct}%</span>
+                <span class="confidence-mini">AI Confidence: ${confidencePct}%</span>
                 <span class="expand-icon">
                     <span class="material-symbols-outlined">expand_more</span>
                 </span>
@@ -540,7 +592,7 @@ function renderRequirementCard(r, isPriorityMatrix = false) {
                 </div>
                 <div class="percentage-bar-wrapper">
                     <div class="percentage-bar-label">
-                        <span>Completion</span>
+                        <span>Audit Match Accuracy</span>
                         <span>${pctFilled.toFixed(0)}%</span>
                     </div>
                     <div class="percentage-bar">
@@ -553,9 +605,9 @@ function renderRequirementCard(r, isPriorityMatrix = false) {
 }
 
 // ─── Card Expand/Collapse ───
-function toggleCard(card) {
+window.toggleCard = function(card) {
     card.classList.toggle('expanded');
-}
+};
 
 // ─── Filtering ───
 filterBar.addEventListener('click', e => {
@@ -582,7 +634,6 @@ function applyFilter(filter) {
         }
     });
 
-    // Hide empty category sections
     document.querySelectorAll('.category-section').forEach(section => {
         const visibleCards = section.querySelectorAll('.requirement-card:not([style*="display: none"])');
         section.style.display = visibleCards.length > 0 ? '' : 'none';
@@ -593,15 +644,52 @@ function applyFilter(filter) {
 analyzeBtn.addEventListener('click', runFullAudit);
 demoBtn.addEventListener('click', runDemoAudit);
 newAuditBtn.addEventListener('click', resetToUpload);
-exportCsvBtn.addEventListener('click', () => {
-    if (auditData && auditData.proposal_id) {
-        window.location.href = `/api/export-csv/${auditData.proposal_id}`;
-    }
-});
+exportCsvBtn.addEventListener('click', () => downloadReport('csv'));
 
 // ─── Utility ───
+window.downloadReport = async function(type, overrideId = null) {
+    const id = overrideId || currentProposalId;
+    if (!id) return;
+    
+    const endpoint = type === 'pdf' ? 'export-pdf' : 'export-csv';
+    const extension = type === 'pdf' ? 'pdf' : 'csv';
+    
+    try {
+        const response = await fetch(`/api/${endpoint}/${id}`);
+        if (!response.ok) throw new Error('Download failed');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ProcureNow_Audit_${id}.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Export Error:', err);
+        alert('Failed to export report. Please try again.');
+    }
+};
+
 function escapeHtml(text) {
     const div = document.createElement('div');
+    if (text === null || text === undefined) return '';
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ─── PDF Viewer Scroll Logic ───
+window.scrollToPdfPage = function(pageNum, evt) {
+    if (evt) evt.stopPropagation();
+    
+    if (!window.currentPdfUrl) {
+        alert("PDF viewer is unavailable for historical or demo audits.");
+        return;
+    }
+    
+    const frame = document.getElementById('proposalPdfFrame');
+    if (frame) {
+        frame.src = `${window.currentPdfUrl}#page=${pageNum}`;
+    }
+};

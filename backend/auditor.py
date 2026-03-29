@@ -61,6 +61,34 @@ def chunk_proposal_by_section(
 # Single-batch audit call
 # ---------------------------------------------------------------------------
 
+def _to_int(val: any) -> int | None:
+    """Sanitize Gemini's page reference (which might be 'Page 12' or 'N/A')."""
+    if val is None or val == "":
+        return None
+    if isinstance(val, int):
+        return val
+    try:
+        # Extract digits from strings like 'Page 12' or '12'
+        m = re.search(r"(\d+)", str(val))
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+def _to_float(val: any, default: float = 0.0) -> float:
+    """Sanitize float fields like confidence_score or percentage_filled."""
+    if val is None or val == "":
+        return default
+    try:
+        if isinstance(val, (int, float)):
+            return float(val)
+        # Handle "85%" or "0.85"
+        clean = str(val).replace("%", "").strip()
+        return float(clean)
+    except Exception:
+        return default
+
+
 def _audit_batch(
     client,
     batch_requirements: list,
@@ -131,13 +159,13 @@ Proposal content:
             category=r.category,
             requirement=r.requirement,
             status=d.get("status", "Incomplete"),
-            confidence_score=float(d.get("confidence_score", 0.5)),
+            confidence_score=_to_float(d.get("confidence_score"), 0.5),
             proposal_evidence=d.get("proposal_evidence"),
             missing_elements=d.get("missing_elements", []),
-            page_reference=d.get("page_reference"),
-            evidence_page=d.get("evidence_page"),
+            page_reference=_to_int(d.get("page_reference")),
+            evidence_page=_to_int(d.get("evidence_page")),
             format_match=d.get("format_match"),
-            percentage_filled=float(d.get("percentage_filled", 0.0)),
+            percentage_filled=_to_float(d.get("percentage_filled"), 0.0),
             risk_level=d.get("risk_level"),
             risk_reasoning=d.get("risk_reasoning"),
         ))

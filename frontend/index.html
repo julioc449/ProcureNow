@@ -24,6 +24,10 @@
             <span class="material-symbols-outlined">inventory_2</span>
             Compliance Library
         </a>
+        <a class="sidebar-link" data-view="pdf-viewer" id="navPdfViewer">
+            <span class="material-symbols-outlined">splitscreen</span>
+            Evidence Viewer
+        </a>
         <a class="sidebar-link">
             <span class="material-symbols-outlined">gavel</span>
             Risk Reports
@@ -206,6 +210,31 @@
 
             <!-- Requirements by Category -->
             <div id="categoriesContainer"></div>
+        </section>
+
+        <!-- ======== EVIDENCE VIEWER ======== -->
+        <section class="pdf-viewer-section" id="pdfViewerPage">
+            <div class="page-header" style="margin-bottom: var(--sp-4);">
+                <h1>Evidence Viewer</h1>
+                <p>Verify AI-extracted requirements against the source proposal document.</p>
+            </div>
+            
+            <div class="dashboard-split" style="margin-top: 0; padding-top: 0;">
+                <!-- Left Side: Audit Results -->
+                <div class="dashboard-left" id="pdfViewerCardsContainer">
+                    <!-- Cards will be populated here -->
+                </div>
+
+                <!-- Right Side: PDF Viewer -->
+                <div class="dashboard-right" id="pdfViewerSection">
+                    <div class="pdf-viewer-header">
+                        <h3><span class="material-symbols-outlined">menu_book</span> Proposal Source Document</h3>
+                    </div>
+                    <div class="pdf-viewer-content" id="pdfViewerContent">
+                        <iframe id="proposalPdfFrame" src="about:blank"></iframe>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- ======== COMPLIANCE LIBRARY ======== -->

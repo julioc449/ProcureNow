@@ -20,7 +20,8 @@ GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
 DB_PATH = _env_path.parent / "data" / "procurenow.db"
 
 # ── Model (paid tier — gemini-2.0-flash everywhere) ───────────────────────
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-3-flash-preview"
+MODEL_REASONING = "gemini-3-flash-preview"
 
 # ── Context Caching ────────────────────────────────────────────────────────
 # RFP cache TTL — 1 hour is plenty for a single audit session.
