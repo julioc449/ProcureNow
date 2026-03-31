@@ -163,6 +163,24 @@ async def download_pdf(audit_id: str):
     )
 
 
+@app.get("/api/export-csv/{audit_id}")
+async def download_csv(audit_id: str):
+    """Download a specific audit report as a CSV file."""
+    csv_path = _get_csv_path(audit_id)
+    if not os.path.exists(csv_path):
+        # If file doesn't exist, try to regenerate it from DB
+        audit = database.get_audit(audit_id)
+        if not audit:
+            raise HTTPException(status_code=404, detail="Audit not found")
+        export_to_csv(audit, csv_path)
+        
+    return FileResponse(
+        csv_path,
+        media_type="text/csv",
+        filename=f"Compliance_Audit_{audit_id}.csv"
+    )
+
+
 # Serve the frontend
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
 if os.path.exists(frontend_dir):

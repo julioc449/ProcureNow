@@ -392,8 +392,14 @@ function renderDashboard(data) {
     animateProgressRing(data);
     renderCategories(data.audit_results);
 
-    // Update Export buttons (already in template)
-    const summaryRow = document.querySelector('.summary-row');
+    // Update Export buttons (high-specificity selector to avoid skeleton)
+    const summaryRow = document.querySelector('#dashboard .summary-row');
+    console.log("[Dashboard] summaryRow found:", summaryRow);
+    if (!summaryRow) {
+        console.warn("[Dashboard] summaryRow NOT found in #dashboard!");
+        return;
+    }
+    
     const existingActions = summaryRow.querySelector('.summary-actions');
     if (existingActions) existingActions.remove();
 
@@ -408,6 +414,7 @@ function renderDashboard(data) {
         </button>
     `;
     summaryRow.appendChild(actions);
+    console.log("[Dashboard] Export buttons appended to summaryRow.");
 
     const priorityItems = data.audit_results.filter(r => 
         (r.status === 'Partial' || r.status === 'Incomplete') && 
@@ -680,21 +687,30 @@ window.downloadReport = async function(type, overrideId = null) {
     const endpoint = type === 'pdf' ? 'export-pdf' : 'export-csv';
     const extension = type === 'pdf' ? 'pdf' : 'csv';
     
+    console.log(`[Export] Requesting ${type} for ID: ${id}`);
     try {
         const response = await fetch(`/api/${endpoint}/${id}`);
-        if (!response.ok) throw new Error('Download failed');
+        console.log(`[Export] Response status: ${response.status}`);
+        if (!response.ok) throw new Error(`Server returned ${response.status}`);
         
         const blob = await response.blob();
+        console.log(`[Export] Blob received, size: ${blob.size}`);
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = `ProcureNow_Audit_${id}.${extension}`;
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
+        
+        // Use a small timeout before cleanup to ensure the click is handled
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 200);
     } catch (err) {
         console.error('Export Error:', err);
-        alert('Failed to export report. Please try again.');
+        alert(`Failed to export report: ${err.message}`);
     }
 };
 

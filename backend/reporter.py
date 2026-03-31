@@ -5,12 +5,24 @@ import os
 class AuditPDF(FPDF):
     def __init__(self, rfp_name, proposal_id, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.rfp_name = rfp_name
+        self.rfp_name = self._sanitize(rfp_name)
         self.proposal_id = proposal_id
         self.logo_path = "logo_procurenow.png"
         self.primary_color = (0, 71, 49)  # Deep Green from logo
         self.secondary_color = (184, 153, 94) # Gold from logo
         self.accent_color = (245, 247, 245) # Ivory background
+
+    def _sanitize(self, text):
+        if not text:
+            return ""
+        # Replace common non-Latin1 characters that cause Helvetica to crash
+        return text.replace("—", "-").replace("–", "-").replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
+
+    def cell(self, w, h=0, txt="", *args, **kwargs):
+        return super().cell(w, h, self._sanitize(txt), *args, **kwargs)
+
+    def multi_cell(self, w, h=0, txt="", *args, **kwargs):
+        return super().multi_cell(w, h, self._sanitize(txt), *args, **kwargs)
 
     def header(self):
         # Background color for header
@@ -102,7 +114,7 @@ def generate_audit_report(data: dict) -> str:
     Main entry point to generate a PDF from audit data.
     Returns the path to the temporary PDF file.
     """
-    rfp_name = data.get("rfp_name", "Unknown RFP")
+    rfp_name = data.get("rfp_name", "Unknown RFP").replace("—", "-").replace("–", "-")
     proposal_id = data.get("proposal_id", "Unknown")
     results = data.get("audit_results", [])
     
