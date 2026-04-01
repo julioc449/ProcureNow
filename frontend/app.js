@@ -844,6 +844,10 @@ window.scrollToPdfPage = function(pageNum, evt) {
     
     const frame = document.getElementById('proposalPdfFrame');
     if (frame) {
-        frame.src = `${window.currentPdfUrl}#page=${pageNum}`;
+        // Blob URLs frequently ignore dynamic hash fragment updates.
+        // Cloning the node flawlessly forces the native PDF viewer to jump.
+        const clone = frame.cloneNode();
+        clone.src = `${window.currentPdfUrl}#page=${pageNum}`;
+        frame.parentNode.replaceChild(clone, frame);
     }
 };
