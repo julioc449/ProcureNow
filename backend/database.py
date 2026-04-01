@@ -289,7 +289,6 @@ def delete_audit(audit_id: str) -> bool:
     finally:
         conn.close()
 
-
 def get_audit_pdfs(audit_id: str) -> Dict[str, Optional[bytes]]:
     """Retrieve just the PDF BLOBs for an audit (efficient)."""
     conn = _get_db()
@@ -303,5 +302,61 @@ def get_audit_pdfs(audit_id: str) -> Dict[str, Optional[bytes]]:
             "rfp": row['rfp_pdf'],
             "proposal": row['proposal_pdf']
         }
+    finally:
+        conn.close()
+
+def update_requirement_status(audit_id: str, requirement: str, new_status: str) -> bool:
+    """Manually override the status of a specific requirement and recalculate audit summary."""
+    conn = _get_db()
+    try:
+        cursor = conn.cursor()
+        
+        # 1. Update the specific requirement
+        if new_status == 'Complete':
+            cursor.execute('''
+                UPDATE audit_results 
+                SET status = ?, percentage_filled = 100.0, risk_level = NULL, risk_reasoning = NULL, missing_elements = '[]'
+                WHERE audit_id = ? AND requirement = ?
+            ''', (new_status, audit_id, requirement))
+        else:
+            cursor.execute('''
+                UPDATE audit_results 
+                SET status = ?
+                WHERE audit_id = ? AND requirement = ?
+            ''', (new_status, audit_id, requirement))
+
+        # 2. Recalculate summary metrics
+        cursor.execute('''
+            SELECT status, COUNT(*) as count 
+            FROM audit_results 
+            WHERE audit_id = ? 
+            GROUP BY status
+        ''', (audit_id,))
+        
+        status_counts = {'Complete': 0, 'Partial': 0, 'Incomplete': 0}
+        for row in cursor.fetchall():
+            if row['status'] in status_counts:
+                status_counts[row['status']] = row['count']
+                
+        total = sum(status_counts.values())
+        if total == 0:
+            return False
+            
+        score = (status_counts['Complete'] * 1.0) + (status_counts['Partial'] * 0.5)
+        overall_percentage = round((score / total) * 100, 1)
+
+        # 3. Update audits table
+        cursor.execute('''
+            UPDATE audits 
+            SET complete_count = ?, partial_count = ?, incomplete_count = ?, overall_percentage = ?
+            WHERE id = ?
+        ''', (status_counts['Complete'], status_counts['Partial'], status_counts['Incomplete'], overall_percentage, audit_id))
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        print(f"[Database] ❌ Failed to override status: {e}")
+        return False
     finally:
         conn.close()

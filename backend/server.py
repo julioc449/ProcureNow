@@ -22,6 +22,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from .pdf_reader import ingest_pdf_multimodal, extract_text_from_bytes
 from .extractor import get_requirements, extract_toc_and_page_map
@@ -171,6 +172,23 @@ async def delete_audit(audit_id: str):
     deleted = database.delete_audit(audit_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Audit not found")
+    return JSONResponse(content={"success": True})
+
+
+class OverrideRequest(BaseModel):
+    requirement: str
+    status: str
+
+@app.patch("/api/audits/{audit_id}/override")
+async def override_audit_status(audit_id: str, payload: OverrideRequest):
+    """Manually override a requirement status and recalculate summary metrics."""
+    if payload.status not in ("Complete", "Partial", "Incomplete"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    success = database.update_requirement_status(audit_id, payload.requirement, payload.status)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to update requirement status")
+        
     return JSONResponse(content={"success": True})
 
 
