@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import re
+import concurrent.futures
 
 from google import genai
 
@@ -210,30 +211,48 @@ def audit_proposal(
         print(f"[Auditor] {len(reqs)} requirements → {total_batches} batch(es) of ≤{batch_size}.")
 
         all_results: list[ComplianceObject] = []
-        for idx, batch in enumerate(batches, 1):
-            print(f"[Auditor] Processing batch {idx}/{total_batches} "
-                  f"({len(batch)} requirements)...")
-            try:
-                batch_results = _audit_batch(
+        results_by_idx = {}
+
+        print(f"[Auditor] Launching {total_batches} batch(es) concurrently (max_workers=5)...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_idx = {
+                executor.submit(
+                    _audit_batch,
                     client=client,
                     batch_requirements=batch,
                     proposal_excerpt=full_excerpt,
                     proposal_id=proposal_id,
-                    batch_num=idx,
+                    batch_num=idx + 1,
                     total_batches=total_batches,
-                )
-                all_results.extend(batch_results)
-            except Exception as e:
-                print(f"[Auditor] Batch {idx} failed: {e} — marking as Incomplete.")
-                for r in batch:
-                    all_results.append(ComplianceObject(
-                        category=r.category,
-                        requirement=r.requirement,
-                        status="Incomplete",
-                        confidence_score=0.0,
-                        missing_elements=[f"Audit error: {str(e)[:80]}"],
-                        percentage_filled=0.0,
-                    ))
+                ): idx
+                for idx, batch in enumerate(batches)
+            }
+
+            for future in concurrent.futures.as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                batch = batches[idx]
+                try:
+                    batch_results = future.result()
+                    results_by_idx[idx] = batch_results
+                    print(f"[Auditor] ✅ Batch {idx + 1}/{total_batches} complete.")
+                except Exception as e:
+                    print(f"[Auditor] ❌ Batch {idx + 1} failed: {e} — marking as Incomplete.")
+                    failed_results = []
+                    for r in batch:
+                        failed_results.append(ComplianceObject(
+                            category=r.category,
+                            requirement=r.requirement,
+                            status="Incomplete",
+                            confidence_score=0.0,
+                            missing_elements=[f"Audit error: {str(e)[:80]}"],
+                            percentage_filled=0.0,
+                        ))
+                    results_by_idx[idx] = failed_results
+
+        # Reconstruct in exact original order
+        for idx in range(total_batches):
+            if idx in results_by_idx:
+                all_results.extend(results_by_idx[idx])
 
         # Generate critical omissions summary
         critical_reqs = [

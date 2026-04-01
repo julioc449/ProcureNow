@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from . import config
-from .schema import AuditReport, ComplianceObject
+from .schema import AuditReport, ComplianceObject, RequirementList
 
 
 def _get_db() -> sqlite3.Connection:
@@ -72,8 +72,56 @@ def init_db() -> None:
         # Index for faster history lookups by date
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_audits_created_at ON audits(created_at DESC)')
         
+        # Memoized rubrics table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS memoized_rubrics (
+                rfp_hash TEXT PRIMARY KEY,
+                rfp_name TEXT NOT NULL,
+                requirements_json TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        ''')
+
         conn.commit()
         print(f"[Database] ✅ Initialized at {config.DB_PATH}")
+    finally:
+        conn.close()
+
+
+def save_memoized_rubric(rfp_hash: str, rfp_name: str, requirements: RequirementList) -> None:
+    conn = _get_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO memoized_rubrics (
+                rfp_hash, rfp_name, requirements_json, created_at
+            ) VALUES (?, ?, ?, ?)
+        ''', (
+            rfp_hash,
+            rfp_name,
+            requirements.model_dump_json(),
+            datetime.utcnow().isoformat() + "Z"
+        ))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"[Database] ❌ Failed to save memoized rubric: {e}")
+    finally:
+        conn.close()
+
+
+def get_memoized_rubric(rfp_hash: str) -> Optional[RequirementList]:
+    conn = _get_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT requirements_json FROM memoized_rubrics WHERE rfp_hash = ?', (rfp_hash,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return RequirementList.model_validate_json(row['requirements_json'])
+    except Exception as e:
+        print(f"[Database] ❌ Failed to get memoized rubric: {e}")
+        return None
     finally:
         conn.close()
 

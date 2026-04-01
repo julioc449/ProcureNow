@@ -16,6 +16,7 @@ Endpoints:
 import os
 import tempfile
 import uuid
+import hashlib
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
@@ -67,20 +68,43 @@ async def full_audit(
         rfp_name = rfp.filename or "Uploaded RFP"
         proposal_id = f"AUDIT_{uuid.uuid4().hex[:8].upper()}"
 
-        # ── Phase 1: Multimodal Ingestion ───────────────────────────────────
-        print("\n[Pipeline] ═══ Phase 1: Multimodal PDF Ingestion ═══")
-        print(f"[Pipeline] Ingesting RFP: {rfp_name} ({len(rfp_bytes):,} bytes)")
-        rfp_content = ingest_pdf_multimodal(rfp_bytes, label="RFP")
-        print(f"[Pipeline] Ingesting Proposal: {proposal.filename} ({len(proposal_bytes):,} bytes)")
-        proposal_content = ingest_pdf_multimodal(proposal_bytes, label="Proposal")
+        # ── Memoization Check ───────────────────────────────────────────────
+        rfp_hash = hashlib.md5(rfp_bytes).hexdigest()
+        cached_requirements = database.get_memoized_rubric(rfp_hash)
 
-        # ── Phase 2: Schema Generation + TOC Mapping ────────────────────────
-        print("\n[Pipeline] ═══ Phase 2: RFP Rubric Extraction + TOC Mapping ═══")
-        requirements = get_requirements(rfp_content)
-        print(f"[Pipeline] Found {len(requirements.requirements)} requirements.")
-        page_map = extract_toc_and_page_map(proposal_content)
-        if page_map:
-            print(f"[Pipeline] TOC sections: {list(page_map.keys())[:6]}{'...' if len(page_map) > 6 else ''}")
+        if cached_requirements:
+            print(f"\n[Pipeline] ⚡ CACHE HIT: Found memoized rubric for {rfp_name} ({rfp_hash})")
+            print("[Pipeline] ⏭️ Skipping Phase 1 (RFP Ingestion) and Phase 2a (Requirement Extraction)")
+            requirements = cached_requirements
+            
+            # Still need to ingest proposal
+            print(f"\n[Pipeline] ═══ Phase 1: Multimodal PDF Ingestion (Proposal Only) ═══")
+            print(f"[Pipeline] Ingesting Proposal: {proposal.filename} ({len(proposal_bytes):,} bytes)")
+            proposal_content = ingest_pdf_multimodal(proposal_bytes, label="Proposal")
+            
+            print("\n[Pipeline] ═══ Phase 2b: Proposal TOC Mapping ═══")
+            page_map = extract_toc_and_page_map(proposal_content)
+            if page_map:
+                print(f"[Pipeline] TOC sections: {list(page_map.keys())[:6]}{'...' if len(page_map) > 6 else ''}")
+                
+        else:
+            print(f"\n[Pipeline] 🔍 CACHE MISS: No memoized rubric for {rfp_name} ({rfp_hash})")
+            # ── Phase 1: Multimodal Ingestion ───────────────────────────────────
+            print("\n[Pipeline] ═══ Phase 1: Multimodal PDF Ingestion ═══")
+            print(f"[Pipeline] Ingesting RFP: {rfp_name} ({len(rfp_bytes):,} bytes)")
+            rfp_content = ingest_pdf_multimodal(rfp_bytes, label="RFP")
+            print(f"[Pipeline] Ingesting Proposal: {proposal.filename} ({len(proposal_bytes):,} bytes)")
+            proposal_content = ingest_pdf_multimodal(proposal_bytes, label="Proposal")
+    
+            # ── Phase 2: Schema Generation + TOC Mapping ────────────────────────
+            print("\n[Pipeline] ═══ Phase 2: RFP Rubric Extraction + TOC Mapping ═══")
+            requirements = get_requirements(rfp_content)
+            print(f"[Pipeline] Found {len(requirements.requirements)} requirements. Saving to cache.")
+            database.save_memoized_rubric(rfp_hash, rfp_name, requirements)
+    
+            page_map = extract_toc_and_page_map(proposal_content)
+            if page_map:
+                print(f"[Pipeline] TOC sections: {list(page_map.keys())[:6]}{'...' if len(page_map) > 6 else ''}")
 
         # ── Phase 3: Semantic Routing & Cross-Verification ──────────────────
         print("\n[Pipeline] ═══ Phase 3: Section-Routed Compliance Audit ═══")
