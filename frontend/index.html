@@ -7,7 +7,7 @@
     <meta name="description"
         content="RFP Compliance Auditor — Automated gap analysis dashboard for construction proposals against Request for Proposal requirements.">
     <title>ProcureNow — RFP Compliance Auditor</title>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="index.css?v=3">
 </head>
 
 <body>
@@ -26,10 +26,6 @@
             <a class="sidebar-link" data-view="library" id="navLibrary">
                 <span class="material-symbols-outlined">inventory_2</span>
                 Compliance Library
-            </a>
-            <a class="sidebar-link" data-view="pdf-viewer" id="navPdfViewer">
-                <span class="material-symbols-outlined">splitscreen</span>
-                Evidence Viewer
             </a>
         </div>
     </nav>
@@ -246,9 +242,15 @@
 
             <!-- ======== EVIDENCE VIEWER ======== -->
             <section class="pdf-viewer-section" id="pdfViewerPage">
-                <div class="page-header" style="margin-bottom: var(--sp-4);">
-                    <h1>Evidence Viewer</h1>
-                    <p>Verify AI-extracted requirements against the source proposal document.</p>
+                <div class="page-header" style="margin-bottom: var(--sp-4); display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h1>Evidence Viewer</h1>
+                        <p>Verify AI-extracted requirements against the source proposal document.</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="closeEvidenceView()">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                        Back to Dashboard
+                    </button>
                 </div>
 
                 <div class="dashboard-split" style="margin-top: 0; padding-top: 0;">
@@ -264,6 +266,17 @@
                         </div>
                         <div class="pdf-viewer-content" id="pdfViewerContent">
                             <iframe id="proposalPdfFrame" src="about:blank"></iframe>
+                            <div id="pdfEmptyState" class="pdf-empty-state" style="display: none;">
+                                <div class="empty-icon">
+                                    <span class="material-symbols-outlined">find_in_page</span>
+                                </div>
+                                <h3>Source Document Unavailable</h3>
+                                <p>For storage optimization and client data security, original proposals are not permanently saved to the database.</p>
+                                <p class="sub-instruction">To use the Evidence Viewer for this audit, please start a New Audit and re-upload the document.</p>
+                                <button class="btn btn-primary" onclick="resetToUpload()" style="margin-top: var(--sp-4);">
+                                    <span class="material-symbols-outlined">add_circle</span> Start New Audit
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -300,6 +313,23 @@
             </section>
         </div>
     </main>
+
+    <!-- ======== DELETE MODAL ======== -->
+    <div id="deleteModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="material-symbols-outlined" style="color: var(--incomplete); font-size: 28px;">warning</span>
+                <h2>Delete Audit</h2>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently delete this compliance report? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-primary" style="background: var(--incomplete); color: white; border-color: var(--incomplete);" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js?v=2"></script>
 </body>

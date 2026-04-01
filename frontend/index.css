@@ -546,6 +546,15 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
+.pdf-viewer-content {
+  position: relative;
+  flex: 1;
+  background: var(--bg-muted);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+}
+
 .pdf-viewer-header {
   padding: var(--sp-3) var(--sp-4);
   background: var(--bg-muted);
@@ -1449,3 +1458,155 @@ body {
 .risk-badge.medium { background: var(--complete-bg); color: var(--complete); border: 1px solid rgba(22, 163, 74, 0.15); }
 .risk-badge.low { background: var(--bg-muted); color: var(--text-muted); border: 1px solid var(--border); }
 
+/* ===== OVERRIDE ACTIONS ===== */
+.override-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px dashed var(--border);
+  align-items: center;
+}
+
+.override-actions h4 {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.override-actions h4 .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.override-btn {
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--text-body);
+  font-weight: 600;
+  transition: all var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.override-btn:hover {
+  background: var(--bg-muted);
+  color: var(--forest);
+  border-color: var(--forest);
+}
+
+.override-btn.active-complete { background: var(--complete-bg); color: var(--complete); border-color: rgba(22, 163, 74, 0.3); }
+.override-btn.active-partial { background: var(--partial-bg); color: var(--partial); border-color: rgba(217, 119, 6, 0.3); }
+.override-btn.active-incomplete { background: var(--incomplete-bg); color: var(--incomplete); border-color: rgba(220, 38, 38, 0.3); }
+
+/* ===== CUSTOM MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(26, 60, 52, 0.4); /* subtle forest backdrop */
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-card {
+  background: var(--bg-card);
+  width: 420px;
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.2s ease-out;
+  border: 1px solid var(--border);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--forest);
+  letter-spacing: -0.02em;
+}
+
+.modal-body {
+  margin-bottom: var(--sp-6);
+  color: var(--text-body);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}
+
+/* ===== PDF EMPTY STATE ===== */
+.pdf-empty-state {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 244, 246, 0.95);
+  text-align: center;
+  padding: var(--sp-8);
+  border-radius: var(--r-md);
+}
+
+.pdf-empty-state .empty-icon {
+  background: white;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin-bottom: var(--sp-6);
+}
+
+.pdf-empty-state .empty-icon .material-symbols-outlined {
+  font-size: 40px;
+  color: var(--forest);
+}
+
+.pdf-empty-state h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--forest);
+  margin-bottom: var(--sp-3);
+  letter-spacing: -0.01em;
+}
+
+.pdf-empty-state p {
+  color: var(--text-body);
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: var(--sp-2);
+}
+
+.pdf-empty-state .sub-instruction {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 400px;
+  margin-bottom: var(--sp-2);
+}

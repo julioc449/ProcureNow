@@ -38,7 +38,6 @@ const filterBar         = document.getElementById('filterBar');
 
 const navDashboard      = document.getElementById('navDashboard');
 const navLibrary        = document.getElementById('navLibrary');
-const navPdfViewer      = document.getElementById('navPdfViewer');
 
 const pdfViewerPage     = document.getElementById('pdfViewerPage');
 const complianceLibrary = document.getElementById('complianceLibrary');
@@ -230,7 +229,6 @@ function resetToUpload() {
 navDashboard.addEventListener('click', () => {
     navDashboard.classList.add('active');
     navLibrary.classList.remove('active');
-    navPdfViewer.classList.remove('active');
     complianceLibrary.classList.remove('active');
     pdfViewerPage.classList.remove('active');
     
@@ -246,7 +244,6 @@ navDashboard.addEventListener('click', () => {
 navLibrary.addEventListener('click', () => {
     navLibrary.classList.add('active');
     navDashboard.classList.remove('active');
-    navPdfViewer.classList.remove('active');
     
     dashboard.classList.remove('active');
     pdfViewerPage.classList.remove('active');
@@ -256,20 +253,19 @@ navLibrary.addEventListener('click', () => {
     loadLibrary();
 });
 
-navPdfViewer.addEventListener('click', () => {
-    navPdfViewer.classList.add('active');
-    navDashboard.classList.remove('active');
-    navLibrary.classList.remove('active');
-    
+// ─── Evidence View Toggle ───
+window.openEvidenceView = function() {
     dashboard.classList.remove('active');
-    complianceLibrary.classList.remove('active');
-    uploadSection.style.display = 'none';
-    
     pdfViewerPage.classList.add('active');
     if (auditData) {
         renderPdfViewerPage(auditData);
     }
-});
+};
+
+window.closeEvidenceView = function() {
+    pdfViewerPage.classList.remove('active');
+    dashboard.classList.add('active');
+};
 
 // ─── Compliance Library Logic ───
 async function loadLibrary() {
@@ -360,8 +356,26 @@ window.viewAudit = async function(id) {
     }
 };
 
-window.deleteAudit = async function(id) {
-    if (!confirm('Are you sure you want to delete this audit report? This cannot be undone.')) return;
+let auditToDelete = null;
+
+window.deleteAudit = function(id) {
+    auditToDelete = id;
+    document.getElementById('deleteModal').style.display = 'flex';
+};
+
+window.closeDeleteModal = function() {
+    auditToDelete = null;
+    document.getElementById('deleteModal').style.display = 'none';
+};
+
+window.confirmDelete = async function() {
+    if (!auditToDelete) return;
+    const id = auditToDelete;
+    
+    // Optimistic UI updates
+    closeDeleteModal();
+    const btnIcon = document.querySelector(`button[onclick="deleteAudit('${id}')"]`);
+    if(btnIcon) btnIcon.innerHTML = '<span class="spinner-small" style="width:16px;height:16px;border-width:2px;"></span>';
     
     try {
         const res = await fetch(`/api/audits/${id}`, { method: 'DELETE' });
@@ -375,6 +389,7 @@ window.deleteAudit = async function(id) {
         }
     } catch (err) {
         alert(`Failed to delete: ${err.message}`);
+        if(btnIcon) btnIcon.innerHTML = '<span class="material-symbols-outlined">delete</span>';
     }
 };
 
@@ -409,8 +424,11 @@ function renderDashboard(data) {
         <button class="btn btn-secondary" onclick="downloadReport('csv')">
             <span class="material-symbols-outlined">download</span> Export CSV
         </button>
-        <button class="btn btn-primary" onclick="downloadReport('pdf')">
-            <span class="material-symbols-outlined">picture_as_pdf</span> Export PDF Report
+        <button class="btn btn-secondary" onclick="downloadReport('pdf')">
+            <span class="material-symbols-outlined">picture_as_pdf</span> Export PDF
+        </button>
+        <button class="btn btn-primary" onclick="openEvidenceView()">
+            <span class="material-symbols-outlined">splitscreen</span> View Source Evidence
         </button>
     `;
     summaryRow.appendChild(actions);
@@ -433,17 +451,32 @@ function renderDashboard(data) {
     }
 }
 
-function renderPdfViewerPage(data) {
+window.renderPdfViewerPage = function(data) {
+    if (!data || !data.audit_results) return;
+    
+    // Clear previous cards
+    pdfViewerCardsContainer.innerHTML = '';
+    
+    // Re-render categories layout (reusing logic from dashboard)
     renderCategories(data.audit_results, pdfViewerCardsContainer);
+    
     const pdfFrame = document.getElementById('proposalPdfFrame');
-    if (window.currentPdfUrl && pdfFrame) {
-        if (!pdfFrame.src.includes(window.currentPdfUrl)) {
-            pdfFrame.src = window.currentPdfUrl;
+    const emptyState = document.getElementById('pdfEmptyState');
+    
+    if (window.currentPdfUrl) {
+        if (emptyState) emptyState.style.display = 'none';
+        if (pdfFrame) {
+            pdfFrame.style.display = 'block';
+            if (!pdfFrame.src.includes(window.currentPdfUrl)) {
+                pdfFrame.src = window.currentPdfUrl;
+            }
         }
-    } else if (pdfFrame) {
-        pdfFrame.src = "about:blank";
+    } else {
+        // Fallback for historical audits or lost state
+        if (pdfFrame) pdfFrame.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'flex';
     }
-}
+};
 
 function animateProgressRing(data) {
     const C = 2 * Math.PI * 65;
@@ -603,7 +636,7 @@ function renderRequirementCard(r, isPriorityMatrix = false) {
          </div>` : '';
 
     return `
-        <div class="requirement-card" data-status="${r.status}" onclick="toggleCard(this)">
+        <div class="requirement-card" data-status="${r.status}" data-req="${escapeHtml(r.requirement).replace(/"/g, '&quot;')}" onclick="toggleCard(this)">
             <div class="requirement-card-header">
                 <div class="status-indicator ${statusClass}"></div>
                 <div class="requirement-text">
@@ -632,14 +665,77 @@ function renderRequirementCard(r, isPriorityMatrix = false) {
                         <div class="percentage-bar-fill ${statusClass}" style="width: ${pctFilled}%;"></div>
                     </div>
                 </div>
+                <div class="override-actions" onclick="event.stopPropagation()">
+                    <h4><span class="material-symbols-outlined">edit</span> Manual Override</h4>
+                    <button class="override-btn ${r.status === 'Complete' ? 'active-complete' : ''}" onclick="overrideStatus(this, 'Complete')">
+                        <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Complete
+                    </button>
+                    <button class="override-btn ${r.status === 'Partial' ? 'active-partial' : ''}" onclick="overrideStatus(this, 'Partial')">
+                        <span class="material-symbols-outlined" style="font-size:16px;">warning</span> Partial
+                    </button>
+                    <button class="override-btn ${r.status === 'Incomplete' ? 'active-incomplete' : ''}" onclick="overrideStatus(this, 'Incomplete')">
+                        <span class="material-symbols-outlined" style="font-size:16px;">cancel</span> Incomplete
+                    </button>
+                </div>
             </div>
         </div>
     `;
 }
 
-// ─── Card Expand/Collapse ───
+// ─── Card Expand/Collapse & Overrides ───
 window.toggleCard = function(card) {
     card.classList.toggle('expanded');
+};
+
+window.overrideStatus = async function(btnEl, newStatus) {
+    if (!currentProposalId) return;
+    
+    const card = btnEl.closest('.requirement-card');
+    const requirement = card.getAttribute('data-req');
+    
+    // Prevent redundant clicks
+    if (card.dataset.status === newStatus) return;
+    
+    // Visual optimistic update (optional, but helps UX)
+    btnEl.innerHTML = '<span class="spinner-small" style="width:14px;height:14px;border-width:2px;"></span> Saving...';
+    
+    try {
+        const res = await fetch(`/api/audits/${currentProposalId}/override`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requirement, status: newStatus })
+        });
+        
+        if (!res.ok) {
+            const errDetails = await res.json();
+            throw new Error(errDetails.detail || `Server returned ${res.status}`);
+        }
+        
+        // Success: Re-fetch the audit data and fully re-render the dashboard to update all progress rings and numbers seamlessly.
+        const auditRes = await fetch(`/api/audits/${currentProposalId}`);
+        if (!auditRes.ok) throw new Error('Failed to refresh audit data');
+        
+        auditData = await auditRes.json();
+        
+        // Re-render
+        renderDashboard(auditData);
+        
+        // Because re-rendering closes everything, we could intentionally keep the card open by finding it again:
+        setTimeout(() => {
+            const newCards = document.querySelectorAll('.requirement-card');
+            for(let c of newCards) {
+                if(c.getAttribute('data-req') === requirement) {
+                    c.classList.add('expanded');
+                    break;
+                }
+            }
+        }, 50);
+        
+    } catch (err) {
+        alert(`Failed to override status: ${err.message}`);
+        // Reset button
+        btnEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;">${newStatus === 'Complete' ? 'check_circle' : newStatus === 'Partial' ? 'warning' : 'cancel'}</span> ${newStatus}`;
+    }
 };
 
 // ─── Filtering ───
