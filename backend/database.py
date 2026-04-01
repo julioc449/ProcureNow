@@ -36,6 +36,8 @@ def init_db() -> None:
                 incomplete_count INTEGER NOT NULL,
                 total_requirements INTEGER NOT NULL,
                 critical_omissions TEXT, -- JSON array
+                rfp_pdf BLOB,            -- Added for persistence
+                proposal_pdf BLOB,       -- Added for persistence
                 created_at TEXT NOT NULL
             )
         ''')
@@ -61,10 +63,17 @@ def init_db() -> None:
             )
         ''')
         
-        # Migration: Add risk fields if they don't exist
+        # Migration: Add PDF and risk fields if they don't exist
+        cursor.execute("PRAGMA table_info(audits)")
+        audit_columns = [info['name'] for info in cursor.fetchall()]
+        if 'rfp_pdf' not in audit_columns:
+            cursor.execute("ALTER TABLE audits ADD COLUMN rfp_pdf BLOB")
+            cursor.execute("ALTER TABLE audits ADD COLUMN proposal_pdf BLOB")
+            print("[Database] 🔄 Migrated `audits` to include PDF fields.")
+
         cursor.execute("PRAGMA table_info(audit_results)")
-        columns = [info['name'] for info in cursor.fetchall()]
-        if 'risk_level' not in columns:
+        res_columns = [info['name'] for info in cursor.fetchall()]
+        if 'risk_level' not in res_columns:
             cursor.execute("ALTER TABLE audit_results ADD COLUMN risk_level TEXT")
             cursor.execute("ALTER TABLE audit_results ADD COLUMN risk_reasoning TEXT")
             print("[Database] 🔄 Migrated `audit_results` to include risk fields.")
@@ -137,8 +146,8 @@ def save_audit(report: AuditReport) -> None:
             INSERT OR REPLACE INTO audits (
                 id, rfp_name, overall_percentage, complete_count, 
                 partial_count, incomplete_count, total_requirements, 
-                critical_omissions, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                critical_omissions, rfp_pdf, proposal_pdf, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             report.proposal_id,
             report.rfp_name,
@@ -148,6 +157,8 @@ def save_audit(report: AuditReport) -> None:
             report.incomplete_count,
             report.total_requirements,
             json.dumps(report.critical_omissions),
+            getattr(report, 'rfp_pdf', None),
+            getattr(report, 'proposal_pdf', None),
             datetime.utcnow().isoformat() + "Z"
         ))
         
@@ -194,7 +205,10 @@ def list_audits(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
     try:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT * FROM audits 
+            SELECT id, rfp_name, overall_percentage, complete_count, 
+                   partial_count, incomplete_count, total_requirements, 
+                   critical_omissions, created_at
+            FROM audits 
             ORDER BY created_at DESC 
             LIMIT ? OFFSET ?
         ''', (limit, offset))
@@ -272,5 +286,22 @@ def delete_audit(audit_id: str) -> bool:
         deleted = cursor.rowcount > 0
         conn.commit()
         return deleted
+    finally:
+        conn.close()
+
+
+def get_audit_pdfs(audit_id: str) -> Dict[str, Optional[bytes]]:
+    """Retrieve just the PDF BLOBs for an audit (efficient)."""
+    conn = _get_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT rfp_pdf, proposal_pdf FROM audits WHERE id = ?', (audit_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"rfp": None, "proposal": None}
+        return {
+            "rfp": row['rfp_pdf'],
+            "proposal": row['proposal_pdf']
+        }
     finally:
         conn.close()

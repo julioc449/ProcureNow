@@ -76,6 +76,8 @@ class AuditReport(BaseModel):
         default_factory=list,
         description="High-priority issues that must be addressed before submission is compliant"
     )
+    rfp_pdf: Optional[bytes] = Field(None, description="Binary content of the RFP PDF")
+    proposal_pdf: Optional[bytes] = Field(None, description="Binary content of the proposal PDF")
 
     @property
     def total_requirements(self) -> int:

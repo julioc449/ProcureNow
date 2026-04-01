@@ -33,5 +33,6 @@ Thumbs.db
 
 # Node (if frontend ever uses npm)
 node_modules/
-
+design-system.md
+.agent/
 data/*.db

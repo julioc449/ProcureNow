@@ -36,17 +36,6 @@ def extract_text_from_bytes(pdf_bytes: bytes) -> str:
     return "\n\n".join(parts)
 
 
-def extract_text_from_pdf(pdf_path: str) -> str:
-    doc = fitz.open(pdf_path)
-    parts = []
-    for i in range(len(doc)):
-        text = doc[i].get_text("text")
-        if text.strip():
-            parts.append(f"--- PAGE {i + 1} ---\n{text}")
-    doc.close()
-    return "\n\n".join(parts)
-
-
 # ---------------------------------------------------------------------------
 # Shared upload helper
 # ---------------------------------------------------------------------------

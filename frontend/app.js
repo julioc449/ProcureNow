@@ -344,6 +344,22 @@ window.viewAudit = async function(id) {
         auditData = await res.json();
         currentProposalId = auditData.proposal_id;
         
+        // Fetch the stored PDF for the viewer
+        try {
+            const pdfRes = await fetch(`/api/audits/${id}/pdf/proposal`);
+            if (pdfRes.ok) {
+                const pdfBlob = await pdfRes.blob();
+                if (window.currentPdfUrl) URL.revokeObjectURL(window.currentPdfUrl);
+                window.currentPdfUrl = URL.createObjectURL(pdfBlob);
+            } else {
+                console.warn(`[Library] Could not fetch PDF for audit ${id}`);
+                if (window.currentPdfUrl) URL.revokeObjectURL(window.currentPdfUrl);
+                window.currentPdfUrl = null;
+            }
+        } catch (pdfErr) {
+            console.error("[Library] Error fetching PDF:", pdfErr);
+        }
+
         // Switch nav state manually
         navDashboard.classList.add('active');
         navLibrary.classList.remove('active');

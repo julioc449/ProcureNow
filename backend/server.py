@@ -18,7 +18,7 @@ import tempfile
 import uuid
 import hashlib
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -115,6 +115,10 @@ async def full_audit(
             rfp_name=rfp_name,
             page_map=page_map,
         )
+        
+        # Inject PDF bytes for persistence
+        audit_report.rfp_pdf = rfp_bytes
+        audit_report.proposal_pdf = proposal_bytes
 
         # ── Phase 4: Output ──────────────────────────────────────────────────
         database.save_audit(audit_report)
@@ -202,6 +206,27 @@ async def download_csv(audit_id: str):
         csv_path,
         media_type="text/csv",
         filename=f"Compliance_Audit_{audit_id}.csv"
+    )
+
+
+@app.get("/api/audits/{audit_id}/pdf/{type}")
+async def get_stored_pdf(audit_id: str, type: str):
+    """Retrieve the original RFP or Proposal PDF from the database."""
+    if type not in ["rfp", "proposal"]:
+        raise HTTPException(status_code=400, detail="Invalid PDF type. Use 'rfp' or 'proposal'.")
+        
+    pdf_map = database.get_audit_pdfs(audit_id)
+    pdf_bytes = pdf_map.get(type)
+    
+    if not pdf_bytes:
+        raise HTTPException(status_code=404, detail=f"No {type} PDF found for this audit.")
+        
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename={type}_{audit_id}.pdf"
+        }
     )
 
 

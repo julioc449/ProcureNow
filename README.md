@@ -2,7 +2,7 @@
 
 ProcureNow is a high-end, AI-powered platform designed to automate the compliance auditing of construction proposals against Request for Proposal (RFP) requirements. Using a 4-phase multimodal pipeline driven by Google Gemini AI, it identifies compliance gaps, evaluates risk factors, and provides a structured audit report with high precision.
 
-## 🚀 Features
+## Features
 
 - **Multimodal PDF Ingestion**: Processes complex documents (tables, charts, grids) using Gemini Vision to ensure no data is missed.
 - **Dynamic RFP Rubric Extraction**: Automatically identifies and extracts requirements from the RFP to build a custom compliance rubric.
@@ -11,7 +11,7 @@ ProcureNow is a high-end, AI-powered platform designed to automate the complianc
 - **Evidence Viewer**: A side-by-side viewer that allows users to verify AI-extracted findings directly against the source proposal PDF.
 - **Branded Exports**: Generate professional PDF audit reports or export results to CSV for further analysis.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/), Python 3.11+
 - **AI/LLM**: [Google Gemini Pro](https://deepmind.google/technologies/gemini/) (Multimodal)
@@ -19,7 +19,7 @@ ProcureNow is a high-end, AI-powered platform designed to automate the complianc
 - **Frontend**: Vanilla JavaScript (ES6+), Modern CSS (Flexible Layout, Glassmorphism), Semantic HTML5
 - **Database**: SQLite (via standard Python library)
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 ProcureNow/
@@ -38,7 +38,7 @@ ProcureNow/
 └── .env                    # Environment variables (API Keys)
 ```
 
-## ⚙️ Setup & Installation
+## Setup & Installation
 
 ### 1. Prerequisites
 - Python 3.11 or higher installed on your system.
@@ -55,7 +55,7 @@ Create a `.env` file in the root directory (or update the existing one):
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-## 🏃‍♂️ How to Run
+## How to Run
 
 Start the server using the following command:
 
@@ -64,7 +64,7 @@ python3 -m backend.server
 ```
 
 Once the server is running, access the dashboard at:
-👉 **[http://localhost:8000](http://localhost:8000)**
+**[http://localhost:8000](http://localhost:8000)**
 
-## 🎨 Design System
+## Design System
 The project follows a strict brand guideline defined in [design-system.md](./design-system.md). It utilizes a professional **Forest Green** and **Lime** palette, prioritizing readability, data density, and a "No-Line" visual philosophy.
